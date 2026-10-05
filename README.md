@@ -70,3 +70,24 @@ docker compose pull rabbitmq
 docker compose pull elasticsearch
 docker compose pull
 docker compose up -d
+
+---
+
+## Frontend (busqueda-frontend)
+
+El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend en `http://localhost:3000` (CORS habilitado).
+
+1. Asegúrate de que el backend esté corriendo (ver pasos anteriores).
+2. Entra a la carpeta del frontend:
+   ```bash
+   cd busqueda-frontend
+   ```
+3. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+4. Levanta el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+5. Abre http://localhost:5173
