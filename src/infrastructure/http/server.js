@@ -1,7 +1,9 @@
 const express = require("express");
+const cors = require("cors");
 const busquedaRoutes = require("./routes/busquedaRoutes");
  
 const app = express();
+app.use(cors());
 app.use(express.json());
 app.use("/api/busqueda", busquedaRoutes);
  
