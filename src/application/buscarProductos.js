@@ -7,7 +7,7 @@ async function buscarProductos(q, pagina = 1, tamanoPagina = 20) {
     size: tamanoPagina,
     query: {
       bool: {
-        must: q ? { multi_match: { query: q, fields: ["nombre^2"], type: "best_fields" } } : { match_all: {} },
+        must: q ? { multi_match: { query: q, fields: ["nombre^2"], type: "best_fields", fuzziness: "AUTO", prefix_length: 1 } } : { match_all: {} },
         filter: { term: { activo: true } },
       },
     },
