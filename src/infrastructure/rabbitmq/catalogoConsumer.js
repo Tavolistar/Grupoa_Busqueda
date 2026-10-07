@@ -32,7 +32,14 @@ async function iniciarConsumidor() {
           // (quedan sin tocar en el índice hasta que Catálogo los agregue al evento).
           await esClient.update({
             index: "productos", id: payload.id,
-            doc: { ...payload, activo: true, actualizadoEn: new Date().toISOString() },
+            doc: {
+              ...payload,
+              activo: true,
+              actualizadoEn: new Date().toISOString(),
+              sugerencia: {
+                input: [payload.nombre, ...String(payload.nombre || "").split(/\s+/).filter(Boolean)],
+              },
+            },
             doc_as_upsert: true,
           });
           break;
