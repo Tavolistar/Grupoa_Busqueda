@@ -51,4 +51,12 @@ const mappings = {
   },
 };
 
-module.exports = { settings, mappings };
+async function crearIndiceSiNoExiste(client) {
+  const existe = await client.indices.exists({ index: "productos" });
+  if (!existe) {
+    await client.indices.create({ index: "productos", settings, mappings });
+    console.log("Índice 'productos' creado con analizadores y mapeos");
+  }
+}
+
+module.exports = { settings, mappings, crearIndiceSiNoExiste };
