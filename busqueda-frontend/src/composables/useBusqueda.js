@@ -1,70 +1,61 @@
-import { reactive, ref } from 'vue'
+// busqueda-frontend/src/composables/useBusqueda.js  (Fase 0 · Juan Pablo)
+// Estado compartido de búsqueda + filtros. Marlon y Jhoan solo LEEN/ESCRIBEN `filtros`
+// y llaman a `buscar()`; no deben tocar este archivo (si falta algo, pídelo al SM).
+import { ref, reactive } from "vue";
+
+const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api/busqueda";
 
 export function useBusqueda() {
   const filtros = reactive({
-    q: '',
-    categorias: [],
-    minPrice: null,
+    q: "",
+    categorias: [],      // Marlon · HU-SRCH-06-FE
+    minPrice: null,      // Jhoan  · HU-SRCH-07-FE
     maxPrice: null,
-    orden: 'relevancia',
-    direccion: 'asc'
-  })
+    orden: "relevancia", // Marlon · HU-SRCH-09-FE
+    direccion: "asc",
+  });
 
   const resultado = ref({
     productos: [],
     total: 0,
     facetas: { categorias: [] },
     sugerenciaTermino: null,
-    categoriasPopulares: []
-  })
-
-  const cargando = ref(false)
-  const error = ref(null)
+    categoriasPopulares: [],
+  });
+  const cargando = ref(false);
+  const error = ref(null);
 
   function construirParams() {
-    const params = new URLSearchParams()
-    if (filtros.q) params.append('q', filtros.q)
-    if (Array.isArray(filtros.categorias)) {
-      for (const c of filtros.categorias) {
-        if (c) params.append('categoria', c)
-      }
-    }
-    if (filtros.minPrice !== null && filtros.minPrice !== '' && filtros.minPrice !== undefined) {
-      params.append('minPrice', filtros.minPrice)
-    }
-    if (filtros.maxPrice !== null && filtros.maxPrice !== '' && filtros.maxPrice !== undefined) {
-      params.append('maxPrice', filtros.maxPrice)
-    }
-    if (filtros.orden) params.append('orden', filtros.orden)
-    if (filtros.direccion) params.append('direccion', filtros.direccion)
-    return params
+    const p = new URLSearchParams();
+    if (filtros.q) p.set("q", filtros.q);
+    filtros.categorias.forEach((c) => p.append("categoria", c));
+    if (filtros.minPrice !== null && filtros.minPrice !== "") p.set("minPrice", filtros.minPrice);
+    if (filtros.maxPrice !== null && filtros.maxPrice !== "") p.set("maxPrice", filtros.maxPrice);
+    p.set("orden", filtros.orden);
+    p.set("direccion", filtros.direccion);
+    return p;
   }
 
   async function buscar() {
-    cargando.value = true
-    error.value = null
+    cargando.value = true;
+    error.value = null;
     try {
-      const params = construirParams()
-      const res = await fetch(`/api/busqueda/productos?${params.toString()}`)
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        error.value = data.error || `Error ${res.status}`
-        return
-      }
-      const data = await res.json()
-      resultado.value = {
-        productos: data.productos || [],
-        total: data.total || 0,
-        facetas: data.facetas || { categorias: [] },
-        sugerenciaTermino: data.sugerenciaTermino || null,
-        categoriasPopulares: data.categoriasPopulares || []
-      }
+      const res = await fetch(`${API}/productos?${construirParams()}`);
+      const datos = await res.json();
+      if (!res.ok) throw new Error(datos.error || "Error en la búsqueda");
+      resultado.value = { facetas: { categorias: [] }, ...datos };
     } catch (e) {
-      error.value = e.message
+      error.value = e.message || "No se pudo conectar con el servidor.";
     } finally {
-      cargando.value = false
+      cargando.value = false;
     }
   }
 
-  return { filtros, resultado, cargando, error, buscar, construirParams }
+  function limpiarFiltros() {
+    filtros.categorias = [];
+    filtros.minPrice = null;
+    filtros.maxPrice = null;
+  }
+
+  return { filtros, resultado, cargando, error, buscar, limpiarFiltros };
 }

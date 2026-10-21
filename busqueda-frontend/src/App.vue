@@ -1,69 +1,43 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import SearchBar from './components/SearchBar.vue'
-import FiltroCategorias from './components/FiltroCategorias.vue'
-import OrdenSelect from './components/OrdenSelect.vue'
-import PrecioFiltro from './components/PrecioFiltro.vue'
-import FiltrosActivos from './components/FiltrosActivos.vue'
 import { useBusqueda } from './composables/useBusqueda'
+// TODO(Marlon · HU-SRCH-06-FE y 09-FE):
+// import FiltroCategorias from './components/FiltroCategorias.vue'
+// import OrdenSelect from './components/OrdenSelect.vue'
+// TODO(Jhoan · HU-SRCH-07-FE y 08-FE):
+// import PrecioFiltro from './components/PrecioFiltro.vue'
+// import FiltrosActivos from './components/FiltrosActivos.vue'
 
-const { filtros, resultado, cargando, error, buscar } = useBusqueda()
+const { filtros, resultado, cargando, error, buscar, limpiarFiltros } = useBusqueda()
+const consultaRealizada = ref(false)
 
-const facetasCategorias = ref([])
-
-onMounted(() => {
-  facetasCategorias.value = resultado.value.facetas?.categorias || []
-})
-
-async function onBuscar(q) {
+// Lo llama la barra de búsqueda (HU-SRCH-01-FE)
+function onBuscar(q) {
   filtros.q = q
-  await buscar()
-  facetasCategorias.value = resultado.value.facetas?.categorias || []
+  consultaRealizada.value = true
+  buscar()
 }
 
-async function onCategoriasUpdate(seleccionadas) {
-  filtros.categorias = seleccionadas
-  await buscar()
-  facetasCategorias.value = resultado.value.facetas?.categorias || []
+// Lo llaman los componentes de filtros/orden cuando cambian algo: @cambio="onFiltrosCambian"
+function onFiltrosCambian() {
+  consultaRealizada.value = true
+  buscar()
 }
 
-async function onOrdenCambiar(val) {
-  filtros.orden = val.orden
-  filtros.direccion = val.direccion
-  await buscar()
+function onLimpiarTodo() {
+  limpiarFiltros()
+  onFiltrosCambian()
 }
 
-async function onPrecioAplicar(val) {
-  filtros.minPrice = val.minPrice
-  filtros.maxPrice = val.maxPrice
-  await buscar()
+function buscarSugerencia() {
+  if (resultado.value.sugerenciaTermino) onBuscar(resultado.value.sugerenciaTermino)
 }
 
-async function onPrecioLimpiar() {
-  filtros.minPrice = null
-  filtros.maxPrice = null
-  await buscar()
-}
-
-async function quitarCategoria(c) {
-  filtros.categorias = filtros.categorias.filter((x) => x !== c)
-  await buscar()
-  facetasCategorias.value = resultado.value.facetas?.categorias || []
-}
-
-async function quitarPrecio() {
-  filtros.minPrice = null
-  filtros.maxPrice = null
-  await buscar()
-}
-
-async function limpiarTodo() {
-  filtros.categorias = []
-  filtros.minPrice = null
-  filtros.maxPrice = null
-  filtros.orden = 'relevancia'
-  filtros.direccion = 'asc'
-  await buscar()
+function etiquetaCategoria(c) {
+  if (typeof c === 'string') return c
+  if (c && typeof c === 'object') return c.nombre || c.categoria || c.name || String(c)
+  return String(c)
 }
 </script>
 
@@ -72,32 +46,40 @@ async function limpiarTodo() {
     <h1>Búsqueda de productos</h1>
     <SearchBar @buscar="onBuscar" />
 
-    <div class="layout">
-      <aside>
-        <FiltroCategorias :facetas="facetasCategorias.length ? facetasCategorias : resultado.facetas.categorias" :seleccionadas="filtros.categorias" @update:seleccionadas="onCategoriasUpdate" />
-        <PrecioFiltro @aplicar="onPrecioAplicar" @limpiar="onPrecioLimpiar" />
-      </aside>
+    <!-- ESPACIOS RESERVADOS: cada quien trabaja solo dentro de su bloque -->
+    <section class="filtros">
+      <!-- Marlon: <FiltroCategorias v-model="filtros.categorias" :facetas="resultado.facetas.categorias" @cambio="onFiltrosCambian" /> -->
+      <!-- Jhoan:  <PrecioFiltro v-model:min="filtros.minPrice" v-model:max="filtros.maxPrice" @cambio="onFiltrosCambian" /> -->
+      <!-- Marlon: <OrdenSelect v-model:orden="filtros.orden" v-model:direccion="filtros.direccion" @cambio="onFiltrosCambian" /> -->
+    </section>
+    <section class="filtros-activos">
+      <!-- Jhoan:  <FiltrosActivos :filtros="filtros" @cambio="onFiltrosCambian" @limpiar="onLimpiarTodo" /> -->
+    </section>
 
-      <section>
-        <div class="toolbar">
-          <FiltrosActivos :categorias="filtros.categorias" :minPrice="filtros.minPrice" :maxPrice="filtros.maxPrice" @quitar-categoria="quitarCategoria" @quitar-precio="quitarPrecio" @limpiar-todo="limpiarTodo" />
-          <OrdenSelect :orden="filtros.orden" :direccion="filtros.direccion" @cambiar="onOrdenCambiar" />
-        </div>
-
-        <p v-if="cargando">Cargando...</p>
-        <p v-else-if="error">{{ error }}</p>
-        <template v-else-if="resultado.total > 0">
-          <p>Total: {{ resultado.total }}</p>
-          <ul>
-            <li v-for="producto in resultado.productos" :key="producto.id">
-              <strong>{{ producto.nombre }}</strong> — ${{ producto.precio }}
-            </li>
-          </ul>
-        </template>
-        <template v-else-if="resultado.total === 0 && filtros.q">
-          <p>No encontramos productos para '{{ filtros.q }}'</p>
-        </template>
-      </section>
-    </div>
+    <p v-if="cargando">Cargando...</p>
+    <p v-else-if="error">{{ error }}</p>
+    <template v-else-if="resultado.total > 0">
+      <ul>
+        <li v-for="producto in resultado.productos" :key="producto.id">
+          <strong>{{ producto.nombre }}</strong> — ${{ producto.precio }}
+        </li>
+      </ul>
+    </template>
+    <template v-else-if="consultaRealizada">
+      <p>No encontramos productos<template v-if="filtros.q"> para '{{ filtros.q }}'</template></p>
+      <button v-if="resultado.sugerenciaTermino" type="button" @click="buscarSugerencia">
+        ¿Quisiste decir "{{ resultado.sugerenciaTermino }}"?
+      </button>
+      <div v-if="resultado.categoriasPopulares.length > 0">
+        <p>Categorías populares:</p>
+        <ul>
+          <li v-for="categoria in resultado.categoriasPopulares" :key="etiquetaCategoria(categoria)">
+            <a href="#" @click.prevent="onBuscar(etiquetaCategoria(categoria))">
+              {{ etiquetaCategoria(categoria) }}
+            </a>
+          </li>
+        </ul>
+      </div>
+    </template>
   </main>
 </template>

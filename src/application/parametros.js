@@ -14,11 +14,13 @@ function parsearParametros(query) {
     tamanoPagina = 20,
   } = query;
 
-  const categorias = []
+  const categoriasCrudas = []
     .concat(categoria ?? [])
     .flatMap((c) => String(c).split(","))
     .map((c) => c.trim())
     .filter(Boolean);
+
+  const categorias = [...new Set(categoriasCrudas)];
 
   return {
     q: String(q).trim(),
