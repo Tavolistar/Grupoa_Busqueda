@@ -1,4 +1,15 @@
-function clausula({ categorias }) {
+function clausula(arg = {}) {
+  let categorias;
+  if (Array.isArray(arg)) {
+    categorias = arg;
+  } else if (arg.categorias !== undefined) {
+    categorias = arg.categorias;
+  } else if (arg.categoria !== undefined) {
+    categorias = arg.categoria;
+  } else {
+    return null;
+  }
+
   if (!categorias || (Array.isArray(categorias) && categorias.length === 0)) {
     return null;
   }

@@ -1,32 +1,44 @@
-function construirQuery(params = {}) {
-  // Esqueleto base - se integra con filtros
-  const must = [];
-  if (params.q) {
-    must.push({
-      multi_match: {
-        query: params.q,
-        fields: ["nombre^2"],
-        type: "best_fields",
-        fuzziness: "AUTO",
-        prefix_length: 1,
-      },
-    });
-  } else {
-    must.push({ match_all: {} });
-  }
+const categoria = require("./filtros/categoria");
+const precio = require("./filtros/precio");
 
-  const filter = [{ term: { activo: true } }];
-  // Los filtros se pueden añadir desde fuera
-  if (params._filtros && Array.isArray(params._filtros)) {
-    filter.push(...params._filtros.filter(Boolean));
+function consultaTexto(q) {
+  if (!q || q === "") {
+    return { match_all: {} };
   }
-
   return {
-    bool: {
-      must,
-      filter,
+    multi_match: {
+      query: q,
+      fields: ["nombre^2", "descripcion"],
+      type: "best_fields",
+      fuzziness: "AUTO",
+      prefix_length: 1,
     },
   };
 }
 
-module.exports = { construirQuery };
+function construirQuery(params = {}) {
+  const filter = [{ term: { activo: true } }];
+
+  const precioClause = precio.clausula(params);
+  if (precioClause) {
+    filter.push(precioClause);
+  }
+
+  const query = {
+    bool: {
+      must: [consultaTexto(params.q)],
+      filter,
+    },
+  };
+
+  const postFilter = categoria.clausula(params) || undefined;
+  const aggs = categoria.agregacion();
+
+  const result = { query, postFilter, aggs };
+  if (postFilter === undefined) {
+    delete result.postFilter;
+  }
+  return result;
+}
+
+module.exports = { construirQuery, consultaTexto };
