@@ -2,25 +2,26 @@ function validar({ orden, direccion }) {
   const ordenesValidos = ["relevancia", "precio", "nombre"];
   const direccionesValidas = ["asc", "desc"];
   if (orden && !ordenesValidos.includes(orden)) {
-    throw new Error("orden inválido");
+    return "orden debe ser relevancia, precio o nombre";
   }
   if (direccion && !direccionesValidas.includes(direccion)) {
-    throw new Error("direccion inválida");
+    return "direccion debe ser asc o desc";
   }
-  return true;
+  return null;
 }
 
 function construirOrden({ orden, direccion }) {
+  const dir = direccion || "asc";
   if (!orden || orden === "relevancia") {
-    return ["_score"];
+    return ["_score", { id: "asc" }];
   }
   if (orden === "precio") {
-    return [{ precio: { order: direccion || "asc" } }];
+    return [{ precio: { order: dir } }, { id: "asc" }];
   }
   if (orden === "nombre") {
-    return [{ nombre: { order: direccion || "asc" } }];
+    return [{ "nombre.keyword": { order: dir } }, { id: "asc" }];
   }
-  return ["_score"];
+  return ["_score", { id: "asc" }];
 }
 
 module.exports = { validar, construirOrden };

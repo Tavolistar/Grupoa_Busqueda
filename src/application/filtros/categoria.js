@@ -3,13 +3,14 @@ function clausula({ categorias }) {
     return null;
   }
   const cats = Array.isArray(categorias) ? categorias : [categorias];
+  if (cats.length === 0) return null;
   return { terms: { categoria: cats } };
 }
 
 function agregacion() {
   return {
-    categorias_populares: {
-      terms: { field: "categoria", size: 10 },
+    categorias: {
+      terms: { field: "categoria", size: 20 },
     },
   };
 }
