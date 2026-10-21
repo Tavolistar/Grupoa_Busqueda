@@ -1,23 +1,54 @@
-const mapping = {
-  mappings: {
-    properties: {
-      id:            { type: "keyword" },
-      nombre:        { type: "text", analyzer: "spanish",
-                       fields: { keyword: { type: "keyword" } } },
-      descripcion:   { type: "text", analyzer: "spanish" },
-      categoria:     { type: "keyword" },
-      precio:        { type: "float" },
-      stock:         { type: "integer" },
-      imagenes:      { type: "keyword" },   // 👈 la nueva, array de URLs
-      activo:        { type: "boolean" },
-      actualizadoEn: { type: "date" },
-      sugerencia:    { type: "completion" }
-    }
-  }
+const { SINONIMOS } = require("./sinonimos");
+
+const settings = {
+  analysis: {
+    filter: {
+      sinonimos_es: {
+        type: "synonym_graph",
+        synonyms: SINONIMOS,
+      },
+      spanish_stop: {
+        type: "stop",
+        stopwords: "_spanish_",
+      },
+      spanish_stemmer: {
+        type: "stemmer",
+        language: "light_spanish",
+      },
+    },
+    analyzer: {
+      busqueda_sinonimos: {
+        type: "custom",
+        tokenizer: "standard",
+        filter: ["lowercase", "sinonimos_es", "spanish_stop", "spanish_stemmer"],
+      },
+    },
+  },
 };
 
-async function crearIndiceSiNoExiste(esClient) {
-  const existe = await esClient.indices.exists({ index: "productos" });
-  if (!existe) await esClient.indices.create({ index: "productos", body: mapping });
-}
-module.exports = { crearIndiceSiNoExiste };
+const mappings = {
+  properties: {
+    nombre: {
+      type: "text",
+      analyzer: "spanish",
+      search_analyzer: "busqueda_sinonimos",
+      fields: {
+        keyword: { type: "keyword" },
+      },
+    },
+    descripcion: {
+      type: "text",
+      analyzer: "spanish",
+      search_analyzer: "busqueda_sinonimos",
+    },
+    id: { type: "keyword" },
+    categoria: { type: "keyword" },
+    precio: { type: "float" },
+    stock: { type: "integer" },
+    activo: { type: "boolean" },
+    actualizadoEn: { type: "date" },
+    sugerencia: { type: "completion" },
+  },
+};
+
+module.exports = { settings, mappings };
