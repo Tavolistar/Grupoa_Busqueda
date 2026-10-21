@@ -19,6 +19,7 @@ async function seed() {
     for (const p of productos) {
       body.push({ index: { _index: "productos", _id: p.id } });
       body.push({
+        id: p.id,
         nombre: p.nombre,
         categoria: p.categoria,
         precio: p.precio,

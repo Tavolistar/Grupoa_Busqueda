@@ -31,14 +31,14 @@ function construirQuery(params = {}) {
     },
   };
 
-  const postFilter = categoria.clausula(params) || undefined;
+  const postFilter = categoria.clausula(params);
   const aggs = categoria.agregacion();
 
-  const result = { query, postFilter, aggs };
-  if (postFilter === undefined) {
-    delete result.postFilter;
-  }
-  return result;
+  return {
+    query,
+    postFilter: postFilter ?? undefined,
+    aggs: aggs ?? undefined,
+  };
 }
 
 module.exports = { construirQuery, consultaTexto };

@@ -25,34 +25,35 @@ async function buscarProductos(paramsOrQ, pagina = 1, tamanoPagina = 20) {
   const priceClause = filtroPrecio.clausula({ minPrice: params.minPrice, maxPrice: params.maxPrice });
   if (priceClause) filtros.push(priceClause);
 
-  const query = construirQuery({ ...params, _filtros: filtros });
-
-  // Agregaciones
-  const aggs = {
-    ...filtroCategoria.agregacion(),
-  };
-
+  const { query, postFilter, aggs } = construirQuery(params);
   const sort = construirOrden({ orden: params.orden, direccion: params.direccion });
 
-  const body = {
+  const searchParams = {
+    index: "productos",
     from: (pag - 1) * tamPag,
     size: tamPag,
     query,
-    aggs,
+    sort,
   };
-  if (sort) body.sort = sort;
 
-  const { hits, aggregations } = await esClient.search({
-    index: "productos",
-    body,
-  });
+  if (postFilter) searchParams.post_filter = postFilter;
+  if (aggs) searchParams.aggs = aggs;
+
+  const response = await esClient.search(searchParams);
+  const hits = response.hits;
+  const aggregations = response.aggregations;
 
   const productos = hits.hits.map((h) => ({ id: h._id, ...h._source }));
   const total = hits.total?.value ?? 0;
 
   // Formatear facetas
   let facetas = { categorias: [] };
-  if (aggregations?.categorias_populares?.buckets) {
+  if (aggregations?.categorias?.buckets) {
+    facetas.categorias = aggregations.categorias.buckets.map((b) => ({
+      key: b.key,
+      doc_count: b.doc_count,
+    }));
+  } else if (aggregations?.categorias_populares?.buckets) {
     facetas.categorias = aggregations.categorias_populares.buckets.map((b) => ({
       key: b.key,
       doc_count: b.doc_count,

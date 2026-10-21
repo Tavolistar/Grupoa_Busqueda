@@ -13,10 +13,8 @@ function validar({ minPrice, maxPrice }) {
   const errMax = check(maxPrice);
   if (errMax) return errMax;
 
-  if (minPrice !== undefined && minPrice !== null && maxPrice !== undefined && maxPrice !== null) {
-    const nMin = typeof minPrice === "number" ? minPrice : Number(minPrice);
-    const nMax = typeof maxPrice === "number" ? maxPrice : Number(maxPrice);
-    if (Number.isFinite(nMin) && Number.isFinite(nMax) && nMin > nMax) {
+  if (minPrice !== undefined && maxPrice !== undefined && minPrice !== null && maxPrice !== null) {
+    if (Number(minPrice) > Number(maxPrice)) {
       return "minPrice no puede ser mayor que maxPrice";
     }
   }

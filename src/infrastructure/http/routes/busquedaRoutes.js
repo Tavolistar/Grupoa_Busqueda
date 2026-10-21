@@ -7,23 +7,17 @@ const { validar: validarPrecio } = require("../../../application/filtros/precio"
 const { validar: validarOrden } = require("../../../application/orden");
 
 router.get("/productos", async (req, res) => {
+  const params = parsearParametros(req.query);
+  const error = validarPrecio(params) || validarOrden(params);
+
+  if (error) return res.status(400).json({ error });
+
   try {
-    const params = parsearParametros(req.query);
-    try {
-      validarPrecio({ minPrice: params.minPrice, maxPrice: params.maxPrice });
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
-    try {
-      validarOrden({ orden: params.orden, direccion: params.direccion });
-    } catch (err) {
-      return res.status(400).json({ error: err.message });
-    }
     const resultado = await buscarProductos(params);
     res.status(200).json(resultado);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Error al buscar productos" });
+    res.status(500).json({ error: "Error en la búsqueda" });
   }
 });
 

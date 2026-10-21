@@ -1,3 +1,9 @@
+const CAMPOS = {
+  relevancia: null,
+  precio: "precio",
+  nombre: "nombre.keyword",
+};
+
 function validar({ orden, direccion }) {
   const ordenesValidos = ["relevancia", "precio", "nombre"];
   const direccionesValidas = ["asc", "desc"];
@@ -13,15 +19,15 @@ function validar({ orden, direccion }) {
 function construirOrden({ orden, direccion }) {
   const dir = direccion || "asc";
   if (!orden || orden === "relevancia") {
-    return ["_score", { id: "asc" }];
+    return ["_score", { id: { order: "asc", unmapped_type: "keyword" } }];
   }
   if (orden === "precio") {
-    return [{ precio: { order: dir } }, { id: "asc" }];
+    return [{ precio: { order: dir } }, { id: { order: "asc", unmapped_type: "keyword" } }];
   }
   if (orden === "nombre") {
-    return [{ "nombre.keyword": { order: dir } }, { id: "asc" }];
+    return [{ "nombre.keyword": { order: dir } }, { id: { order: "asc", unmapped_type: "keyword" } }];
   }
-  return ["_score", { id: "asc" }];
+  return ["_score", { id: { order: "asc", unmapped_type: "keyword" } }];
 }
 
 module.exports = { validar, construirOrden };

@@ -73,6 +73,28 @@ docker compose up -d
 
 ---
 
+### 4. Inicialización de la Base de Datos (Elasticsearch)
+
+Si es la primera vez que levantas el proyecto, clonas el repositorio en otro equipo o ejecutas `docker compose down -v` (borrando los volúmenes), es **obligatorio** crear la estructura del índice y cargar los datos de prueba antes de levantar el frontend o ejecutar pruebas.
+
+En la terminal, sobre la raíz del proyecto, ejecuta:
+
+```bash
+# 1. Instalar las dependencias del backend
+npm install
+
+# 2. Crear el índice con los analizadores (sinónimos) y mapeos
+node scripts/migrarIndice.js
+
+# 3. Cargar los 10 productos de prueba
+npm run seed
+
+# 4. Verificar que la API y la base de datos funcionan correctamente
+npm test
+```
+
+---
+
 ## Frontend (busqueda-frontend)
 
 El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend en `http://localhost:3000` (CORS habilitado).
