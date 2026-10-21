@@ -12,4 +12,4 @@ function iniciarServidor() {
   app.listen(PORT, () => console.log(`Servidor escuchando en el puerto ${PORT} 🚀`));
 }
  
-module.exports = { iniciarServidor };
+module.exports = { app, iniciarServidor };
