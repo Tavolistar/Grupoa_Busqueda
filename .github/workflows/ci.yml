@@ -1,5 +1,3 @@
-# Si Javier ya tiene un ci.yml, NO lo sobrescribas: solo asegúrate de que tenga el servicio de
-# Elasticsearch y el paso `npm test`.
 name: CI
 on:
   push:
@@ -33,4 +31,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      # Las pruebas de integración necesitan el índice con analizadores y los 10 productos de prueba
+      - run: node scripts/migrarIndice.js
+      - run: npm run seed
       - run: npm test
