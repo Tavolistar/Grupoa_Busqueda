@@ -1,42 +1,48 @@
 <template>
   <div class="filtro-categorias">
     <h3>Categorías</h3>
-    <div v-for="f in facetas" :key="f.key || f.nombre" class="categoria-item">
+    <div v-for="f in opciones" :key="f.id" class="categoria-item">
       <label>
         <input
           type="checkbox"
-          :value="f.key || f.nombre"
-          :checked="seleccionadas.includes(f.key || f.nombre)"
-          @change="toggle(f.key || f.nombre)"
+          :value="f.id"
+          :checked="seleccionadas.includes(f.id)"
+          @change="toggle(f.id)"
         />
-        {{ f.key || f.nombre }} ({{ f.doc_count ?? f.total ?? 0 }})
+        {{ f.nombre }} ({{ f.total }})
       </label>
     </div>
   </div>
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
-  facetas: {
-    type: Array,
-    default: () => []
-  },
-  seleccionadas: {
-    type: Array,
-    default: () => []
-  }
+  facetas: { type: Array, default: () => [] },
+  seleccionadas: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['update:seleccionadas'])
 
-function toggle(cat) {
+// Acepta { id, nombre, total } (contrato v1.1), buckets crudos de Elasticsearch
+// { key, doc_count } o un simple texto
+const opciones = computed(() =>
+  props.facetas.map((f) => {
+    const id = typeof f === 'string' ? f : (f.id ?? f.key)
+    return {
+      id,
+      nombre: f.nombre ?? String(id).replace(/^cat-/, ''),
+      total: f.total ?? f.doc_count ?? 0
+    }
+  })
+)
+
+function toggle(id) {
   const arr = [...props.seleccionadas]
-  const idx = arr.indexOf(cat)
-  if (idx >= 0) {
-    arr.splice(idx, 1)
-  } else {
-    arr.push(cat)
-  }
+  const idx = arr.indexOf(id)
+  if (idx >= 0) arr.splice(idx, 1)
+  else arr.push(id)
   emit('update:seleccionadas', arr)
 }
 </script>

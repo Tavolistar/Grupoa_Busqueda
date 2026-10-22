@@ -1,28 +1,52 @@
 <script setup>
 import { ref } from 'vue'
 import SearchBar from './components/SearchBar.vue'
+import FiltroCategorias from './components/FiltroCategorias.vue'
+import OrdenSelect from './components/OrdenSelect.vue'
+import PrecioFiltro from './components/PrecioFiltro.vue'
+import FiltrosActivos from './components/FiltrosActivos.vue'
 import { useBusqueda } from './composables/useBusqueda'
-// TODO(Marlon · HU-SRCH-06-FE y 09-FE):
-// import FiltroCategorias from './components/FiltroCategorias.vue'
-// import OrdenSelect from './components/OrdenSelect.vue'
-// TODO(Jhoan · HU-SRCH-07-FE y 08-FE):
-// import PrecioFiltro from './components/PrecioFiltro.vue'
-// import FiltrosActivos from './components/FiltrosActivos.vue'
 
 const { filtros, resultado, cargando, error, buscar, limpiarFiltros } = useBusqueda()
 const consultaRealizada = ref(false)
 
-// Lo llama la barra de búsqueda (HU-SRCH-01-FE)
 function onBuscar(q) {
   filtros.q = q
   consultaRealizada.value = true
   buscar()
 }
 
-// Lo llaman los componentes de filtros/orden cuando cambian algo: @cambio="onFiltrosCambian"
 function onFiltrosCambian() {
   consultaRealizada.value = true
   buscar()
+}
+
+function onCategorias(nuevas) {
+  filtros.categorias = nuevas
+  onFiltrosCambian()
+}
+
+function onOrden({ orden, direccion }) {
+  filtros.orden = orden
+  filtros.direccion = direccion
+  onFiltrosCambian()
+}
+
+function onPrecio({ minPrice, maxPrice }) {
+  filtros.minPrice = minPrice
+  filtros.maxPrice = maxPrice
+  onFiltrosCambian()
+}
+
+function onQuitarCategoria(c) {
+  filtros.categorias = filtros.categorias.filter((x) => x !== c)
+  onFiltrosCambian()
+}
+
+function onQuitarPrecio() {
+  filtros.minPrice = null
+  filtros.maxPrice = null
+  onFiltrosCambian()
 }
 
 function onLimpiarTodo() {
@@ -46,14 +70,23 @@ function etiquetaCategoria(c) {
     <h1>Búsqueda de productos</h1>
     <SearchBar @buscar="onBuscar" />
 
-    <!-- ESPACIOS RESERVADOS: cada quien trabaja solo dentro de su bloque -->
+    <FiltrosActivos
+      :categorias="filtros.categorias"
+      :min-price="filtros.minPrice"
+      :max-price="filtros.maxPrice"
+      @quitar-categoria="onQuitarCategoria"
+      @quitar-precio="onQuitarPrecio"
+      @limpiar-todo="onLimpiarTodo"
+    />
+
     <section class="filtros">
-      <!-- Marlon: <FiltroCategorias v-model="filtros.categorias" :facetas="resultado.facetas.categorias" @cambio="onFiltrosCambian" /> -->
-      <!-- Jhoan:  <PrecioFiltro v-model:min="filtros.minPrice" v-model:max="filtros.maxPrice" @cambio="onFiltrosCambian" /> -->
-      <!-- Marlon: <OrdenSelect v-model:orden="filtros.orden" v-model:direccion="filtros.direccion" @cambio="onFiltrosCambian" /> -->
-    </section>
-    <section class="filtros-activos">
-      <!-- Jhoan:  <FiltrosActivos :filtros="filtros" @cambio="onFiltrosCambian" @limpiar="onLimpiarTodo" /> -->
+      <FiltroCategorias
+        :facetas="resultado.facetas.categorias"
+        :seleccionadas="filtros.categorias"
+        @update:seleccionadas="onCategorias"
+      />
+      <PrecioFiltro @aplicar="onPrecio" @limpiar="onQuitarPrecio" />
+      <OrdenSelect :orden="filtros.orden" :direccion="filtros.direccion" @cambiar="onOrden" />
     </section>
 
     <p v-if="cargando">Cargando...</p>
@@ -67,6 +100,9 @@ function etiquetaCategoria(c) {
     </template>
     <template v-else-if="consultaRealizada">
       <p>No encontramos productos<template v-if="filtros.q"> para '{{ filtros.q }}'</template></p>
+      <p v-if="filtros.categorias.length || filtros.minPrice !== null || filtros.maxPrice !== null">
+        Prueba quitando algún filtro.
+      </p>
       <button v-if="resultado.sugerenciaTermino" type="button" @click="buscarSugerencia">
         ¿Quisiste decir "{{ resultado.sugerenciaTermino }}"?
       </button>
