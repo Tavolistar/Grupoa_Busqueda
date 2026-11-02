@@ -12,7 +12,7 @@
 | `orden` | string | No | "relevancia" | Campo/criterio de ordenamiento. |
 | `direccion` | string | No | "asc" | Dirección de ordenamiento (`asc` o `desc`). |
 | `pagina` | number | No | 1 | Número de página. Mínimo 1. |
-| `tamanoPagina` | number | No | 20 | Tamaño de página. Rango 1-100. | 
+| `tamanoPagina` | number | No | 20 | Tamaño de página. Rango 1-100. El producto `pagina * tamanoPagina` no puede superar 10000. |
 
 ## Respuesta JSON
 ```json
@@ -31,6 +31,9 @@
   "total": 0,
   "pagina": 1,
   "tamanoPagina": 20,
+  "totalPaginas": 0,
+  "hayAnterior": false,
+  "haySiguiente": false,
   "sugerenciaTermino": null,
   "categoriasPopulares": [],
   "facetas": {
@@ -43,4 +46,4 @@
 
 ## Notas
 - Si no hay resultados y hay texto de búsqueda (`q`) y **no existen filtros activos**, se pueden retornar alternativas (sugerencias) desde `alternativasParaSinResultados`.
-- Si hay error de validación en `precio` u `orden`, el endpoint debe responder `400 Bad Request` con `{ "error": "..." }`.
+- Si hay error de validación en `precio`, `orden` o paginación (más de 10000 resultados de ventana), el endpoint debe responder `400 Bad Request` con `{ "error": "..." }`.
