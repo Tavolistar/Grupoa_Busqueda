@@ -5,10 +5,11 @@ const { obtenerSugerencias } = require("../../../application/obtenerSugerencias"
 const { parsearParametros } = require("../../../application/parametros");
 const { validar: validarPrecio } = require("../../../application/filtros/precio");
 const { validar: validarOrden } = require("../../../application/orden");
+const { validarPaginacion } = require("../../../application/paginacion");
 
 router.get("/productos", async (req, res) => {
   const params = parsearParametros(req.query);
-  const error = validarPrecio(params) || validarOrden(params);
+  const error = validarPrecio(params) || validarOrden(params) || validarPaginacion(params);
 
   if (error) return res.status(400).json({ error });
 

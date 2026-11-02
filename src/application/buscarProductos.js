@@ -3,6 +3,7 @@ const esClient = require("../infrastructure/elasticsearch/client");
 const { construirQuery } = require("./construirQuery");
 const { construirOrden } = require("./orden");
 const { alternativasParaSinResultados } = require("./manejarSinResultados");
+const { crearMetadatosPaginacion } = require("./paginacion");
 
 function formatearFacetas(aggregations) {
   const buckets = aggregations?.categorias?.buckets ?? [];
@@ -45,7 +46,11 @@ async function buscarProductos(paramsOrQ, pagina = 1, tamanoPagina = 20) {
   // Decisión de la Fase 0: las alternativas (HU-SRCH-04) solo con texto y SIN filtros activos
   if (total === 0 && q && !hayFiltrosActivos(params)) {
     const alt = await alternativasParaSinResultados(q, pag, tamPag);
-    return { ...alt, facetas };
+    return {
+      ...alt,
+      ...crearMetadatosPaginacion(total, pag, tamPag),
+      facetas,
+    };
   }
 
   return {
@@ -53,6 +58,7 @@ async function buscarProductos(paramsOrQ, pagina = 1, tamanoPagina = 20) {
     total,
     pagina: pag,
     tamanoPagina: tamPag,
+    ...crearMetadatosPaginacion(total, pag, tamPag),
     sugerenciaTermino: null,
     categoriasPopulares: [],
     facetas,
