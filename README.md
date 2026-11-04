@@ -95,6 +95,35 @@ npm test
 
 ---
 
+### 5. Pruebas de carga (rendimiento - HU-SRCH-11b)
+
+Para medir el rendimiento con autocannon, primero carga el dataset grande y luego ejecuta la prueba:
+
+```bash
+# 1. Cargar el dataset grande (10.000 productos por defecto)
+npm run seed:grande
+
+# 2. Medir con y sin caché (tabla de tiempos con P95)
+npm run carga
+```
+
+Metas: **P95 < 100 ms con caché** y **P95 < 1 s sin caché**.
+
+> **IMPORTANTE:** después de usar el seed grande, restaura los datos normales antes de correr `npm test`, porque las pruebas de integración asumen el dataset de 10 productos:
+
+```bash
+# 1. Borrar el índice grande (productos_v2 y su alias)
+curl -X DELETE http://localhost:9200/productos_v2
+
+# 2. Recrear el índice con los analizadores (sinónimos) y el alias
+node scripts/migrarIndice.js
+
+# 3. Cargar los 10 productos de prueba
+npm run seed
+```
+
+---
+
 ## Frontend (busqueda-frontend)
 
 El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend en `http://localhost:3000` (CORS habilitado).
