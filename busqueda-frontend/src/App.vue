@@ -5,6 +5,7 @@ import FiltroCategorias from './components/FiltroCategorias.vue'
 import OrdenSelect from './components/OrdenSelect.vue'
 import PrecioFiltro from './components/PrecioFiltro.vue'
 import FiltrosActivos from './components/FiltrosActivos.vue'
+import Paginacion from './components/Paginacion.vue'
 import { useBusqueda } from './composables/useBusqueda'
 
 const { filtros, resultado, cargando, error, buscar, limpiarFiltros } = useBusqueda()
@@ -12,13 +13,22 @@ const consultaRealizada = ref(false)
 
 function onBuscar(q) {
   filtros.q = q
+  filtros.pagina = 1
   consultaRealizada.value = true
   buscar()
 }
 
+// Cualquier cambio de filtro u orden vuelve a la página 1
 function onFiltrosCambian() {
+  filtros.pagina = 1
   consultaRealizada.value = true
   buscar()
+}
+
+function onPagina(p) {
+  filtros.pagina = p
+  buscar()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
 function onCategorias(nuevas) {
@@ -97,6 +107,15 @@ function etiquetaCategoria(c) {
           <strong>{{ producto.nombre }}</strong> — ${{ producto.precio }}
         </li>
       </ul>
+      <Paginacion
+        :pagina="filtros.pagina"
+        :total-paginas="resultado.totalPaginas"
+        :tamano-pagina="filtros.tamanoPagina"
+        :total="resultado.total"
+        :hay-anterior="resultado.hayAnterior"
+        :hay-siguiente="resultado.haySiguiente"
+        @cambiar="onPagina"
+      />
     </template>
     <template v-else-if="consultaRealizada">
       <p>No encontramos productos<template v-if="filtros.q"> para '{{ filtros.q }}'</template></p>
