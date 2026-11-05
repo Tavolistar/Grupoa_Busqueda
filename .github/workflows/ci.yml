@@ -8,7 +8,18 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+    # Si algo vuelve a colgarse, que falle en minutos y no a las 6 horas
+    timeout-minutes: 15
     services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
       elasticsearch:
         image: docker.elastic.co/elasticsearch/elasticsearch:8.14.3
         env:
@@ -24,6 +35,7 @@ jobs:
           --health-retries 12
     env:
       ELASTICSEARCH_URL: http://localhost:9200
+      REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
