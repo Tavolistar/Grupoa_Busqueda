@@ -13,11 +13,16 @@ export function useBusqueda() {
     maxPrice: null,
     orden: "relevancia", // Marlon · HU-SRCH-09-FE
     direccion: "asc",
+    pagina: 1,           // Marlon · HU-SRCH-10-FE
+    tamanoPagina: 20,
   });
 
   const resultado = ref({
     productos: [],
     total: 0,
+    totalPaginas: 0,
+    hayAnterior: false,
+    haySiguiente: false,
     facetas: { categorias: [] },
     sugerenciaTermino: null,
     categoriasPopulares: [],
@@ -33,6 +38,8 @@ export function useBusqueda() {
     if (filtros.maxPrice !== null && filtros.maxPrice !== "") p.set("maxPrice", filtros.maxPrice);
     p.set("orden", filtros.orden);
     p.set("direccion", filtros.direccion);
+    p.set("pagina", filtros.pagina);
+    p.set("tamanoPagina", filtros.tamanoPagina);
     return p;
   }
 
