@@ -28,6 +28,8 @@ function fila(nombre, result) {
     "p90 (ms)": Number((l.p90 || 0).toFixed(1)),
     "P95 (ms)": Number((p95(l) || 0).toFixed(1)),
     "p99 (ms)": Number((l.p99 || 0).toFixed(1)),
+    // Si hay respuestas que no son 2xx la medición no sirve: se estaría midiendo el error
+    "no 2xx": result.non2xx || 0,
   };
 }
 
@@ -42,13 +44,19 @@ async function main() {
     connections: CONNECTIONS,
     duration: DURATION,
     timeout: 30,
-    setupRequest: (request) => {
-      contador += 1;
-      request.path = `/api/busqueda/productos?q=${encodeURIComponent(
-        "camisa " + contador
-      )}`;
-      return request;
-    },
+    // autocannon solo aplica setupRequest dentro de "requests"; fuera de ahí se ignora
+    // y todas las peticiones iban a "/" (404)
+    requests: [
+      {
+        setupRequest: (request) => {
+          contador += 1;
+          request.path = `/api/busqueda/productos?q=${encodeURIComponent(
+            "camisa " + contador
+          )}`;
+          return request;
+        },
+      },
+    ],
   });
 
   await fetch(`${BASE_URL}/api/busqueda/productos?q=camisa`);
@@ -65,6 +73,11 @@ async function main() {
     fila("Con cache (HIT -> Redis)", conCache),
   ];
   console.table(filas);
+
+  if (sinCache.non2xx > 0 || conCache.non2xx > 0) {
+    console.error("\nHubo respuestas que no son 2xx: los tiempos no son válidos. Revisa que el backend esté corriendo.");
+    process.exitCode = 1;
+  }
 
   const p95Sin = p95(sinCache.latency);
   const p95Con = p95(conCache.latency);
