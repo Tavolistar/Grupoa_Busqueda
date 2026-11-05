@@ -20,6 +20,12 @@ async function conectar() {
     try {
       client = createClient({
         url: getRedisUrl(),
+        socket: {
+          connectTimeout: 2000,
+          // Sin límite, node-redis reintenta para siempre si Redis no está y el proceso nunca termina
+          reconnectStrategy: (intentos) =>
+            intentos >= 3 ? new Error("Redis no disponible") : Math.min(intentos * 200, 1000),
+        },
       });
 
       client.on("error", (err) => {
@@ -89,8 +95,24 @@ function estaConectado() {
   return conectado && client && client.isOpen;
 }
 
+// Cierra la conexión para que procesos cortos (pruebas, scripts) puedan terminar
+async function cerrar() {
+  const c = client;
+  client = null;
+  conectado = false;
+  inicializando = null;
+  if (c && c.isOpen) {
+    try {
+      await c.quit();
+    } catch (err) {
+      // ignorar: la conexión ya estaba cerrándose
+    }
+  }
+}
+
 module.exports = {
   conectar,
   getClient,
   estaConectado,
+  cerrar,
 };

@@ -11,6 +11,11 @@
     "carga": "node scripts/carga.js",
     "test": "jest --runInBand"
   },
+  "jest": {
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup/cerrarConexiones.js"],
+    "testPathIgnorePatterns": ["/node_modules/", "<rootDir>/tests/setup/"],
+    "modulePathIgnorePatterns": ["<rootDir>/.kilo/"]
+  },
   "dependencies": {
     "@elastic/elasticsearch": "^8.14.0",
     "amqplib": "^0.10.4",
