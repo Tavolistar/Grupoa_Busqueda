@@ -1,4 +1,4 @@
-// Prueba end-to-end del Sprint 4: Catálogo (simulado) -> RabbitMQ -> índice -> caché -> Kong.
+// Prueba end-to-end del Sprint 4: Catálogo (simulado con el contrato v2.x) -> RabbitMQ -> índice -> caché -> Kong.
 // Requiere: docker compose --profile gateway up -d --build
 // Uso: node scripts/e2e.js            (por defecto contra Kong en http://localhost:8000)
 //      BASE_URL=http://localhost:3000 node scripts/e2e.js
@@ -48,8 +48,10 @@ async function main() {
   const limite = await get("/productos?q=camisa&pagina=600&tamanoPagina=20");
   revisar("Validación de paginación a través de Kong", limite.status === 400, `HTTP ${limite.status}`);
 
+  const bufanda = { id: ID, nombre: "Bufanda andina", descripcion: "Bufanda de lana", precio: 45000, categoria: "cat-accesorios", stock: 10, activo: true };
+
   // 1. Catálogo crea un producto. Cada intento usa un tamaño de página distinto para no leer una respuesta cacheada
-  await publicarEvento("creado", { id: ID, nombre: "Bufanda andina", precio: 45000, categoria: "cat-accesorios" });
+  await publicarEvento("creado", bufanda);
   const creado = await hastaQue((i) => get(`/productos?q=bufanda&tamanoPagina=${TP - 40 + i}`).then((r) => ids(r).includes(ID) && r));
   revisar("ProductoCreado aparece en la búsqueda", !!creado, creado ? "indexado desde el evento" : "no apareció en 10 s");
 
@@ -59,7 +61,7 @@ async function main() {
   revisar("La consulta repetida sale de la caché", cache.headers.get("x-cache") === "HIT", `X-Cache: ${cache.headers.get("x-cache")}`);
 
   // 3. Catálogo actualiza el producto: la búsqueda cacheada que lo contiene se invalida
-  await publicarEvento("actualizado", { id: ID, nombre: "Bufanda andina gris", precio: 39000, categoria: "cat-accesorios" });
+  await publicarEvento("actualizado", { ...bufanda, nombre: "Bufanda andina gris", precio: 39000 });
   const actualizado = await hastaQue(() => get(`/productos?q=bufanda&tamanoPagina=${TP}`).then((r) => {
     const p = (r.body.productos || []).find((x) => x.id === ID);
     return p && p.precio === 39000 && r;
@@ -71,6 +73,22 @@ async function main() {
   await publicarEvento("desactivado", { id: ID });
   const desactivado = await hastaQue(() => get(`/productos?q=bufanda&tamanoPagina=${TP}`).then((r) => !ids(r).includes(ID) && r));
   revisar("ProductoDesactivado deja de aparecer", !!desactivado, desactivado ? "ya no está en los resultados" : "seguía apareciendo");
+
+  // 5. La búsqueda sin el producto queda en caché; al reactivarlo debe volver de inmediato (se borra toda la caché)
+  await get(`/productos?q=bufanda&tamanoPagina=${TP}`);
+  await publicarEvento("reactivado", { ...bufanda, nombre: "Bufanda andina gris", precio: 39000 });
+  const reactivado = await hastaQue(() => get(`/productos?q=bufanda&tamanoPagina=${TP}`).then((r) => ids(r).includes(ID) && r));
+  revisar("ProductoReactivado vuelve a aparecer aunque la búsqueda estuviera en caché", !!reactivado,
+    reactivado ? `X-Cache: ${reactivado.headers.get("x-cache")}` : "no volvió en 10 s");
+
+  // 6. Una edición de un producto desactivado llega como actualizado con activo: false y no lo trae de vuelta
+  await publicarEvento("desactivado", { id: ID });
+  await hastaQue(() => get(`/productos?q=bufanda&tamanoPagina=${TP}`).then((r) => !ids(r).includes(ID) && r));
+  await publicarEvento("actualizado", { ...bufanda, precio: 41000, activo: false });
+  await esperar(1500);
+  const sigueFuera = await get(`/productos?q=bufanda&tamanoPagina=${TP + 1}`);
+  revisar("ProductoActualizado con activo:false no vuelve a la búsqueda", !ids(sigueFuera).includes(ID),
+    ids(sigueFuera).includes(ID) ? "apareció" : "sigue fuera");
 
   console.table(resultados);
   const fallas = resultados.filter((r) => r.resultado === "FALLA").length;
