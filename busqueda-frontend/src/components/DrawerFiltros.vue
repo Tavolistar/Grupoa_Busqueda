@@ -1,7 +1,7 @@
 <template>
   <div class="drawer-filtros">
     <button type="button" class="abrir" :aria-expanded="abierto" @click="abierto = true">
-      Filtros<span v-if="cantidad"> ({{ cantidad }})</span>
+      {{ cantidad ? `Filtros (${cantidad})` : 'Filtros' }}
     </button>
 
     <div v-if="abierto" class="fondo" @click="abierto = false"></div>
