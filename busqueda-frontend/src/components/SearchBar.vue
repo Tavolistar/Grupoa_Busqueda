@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { API } from '../api'
 
 const emit = defineEmits(['buscar'])
 const texto = ref('')
@@ -23,7 +24,7 @@ function alEscribir() {
   temporizador = setTimeout(async () => {
     try {
       const respuesta = await fetch(
-        `http://localhost:3000/api/busqueda/sugerencias?q=${encodeURIComponent(q)}`
+        `${API}/sugerencias?q=${encodeURIComponent(q)}`
       )
       if (!respuesta.ok) return
       const datos = await respuesta.json()

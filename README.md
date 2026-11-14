@@ -124,9 +124,45 @@ npm run seed
 
 ---
 
+### 6. API Gateway (Kong) e integración con Catálogo (Sprint 4)
+
+Con el perfil `gateway`, el microservicio corre en su propio contenedor y **Kong** queda como único punto de entrada público:
+
+```bash
+docker compose --profile gateway up -d --build
+```
+
+| Servicio | URL | Uso |
+| -------- | --- | --- |
+| Kong (proxy) | http://localhost:8000/api/busqueda/... | Entrada pública: CORS, límite de 600 peticiones/minuto e id de petición (`X-Request-Id`) |
+| Kong (admin) | http://127.0.0.1:8001 | Solo local, para consultar la configuración |
+| Microservicio | interno, `busqueda:3000` | No se expone al exterior |
+
+La configuración de Kong está en `kong/kong.yml` (modo declarativo, sin base de datos).
+
+**Simular eventos de Catálogo** (mismo exchange y routing keys que el consumidor):
+
+```bash
+node scripts/publicarEventoCatalogo.js creado p100 "Bufanda de lana" 45000 cat-accesorios
+node scripts/publicarEventoCatalogo.js actualizado p100 "Bufanda de lana gris" 39000 cat-accesorios
+node scripts/publicarEventoCatalogo.js desactivado p100
+```
+
+**Prueba end-to-end** (Kong → microservicio → Elasticsearch/Redis, con eventos reales por RabbitMQ):
+
+```bash
+node scripts/e2e.js
+```
+
+Verifica 7 casos: enrutamiento de búsqueda y sugerencias, validación 400, alta de producto por evento, caché (HIT), invalidación al actualizar y baja al desactivar.
+
+> Si antes corrías `npm start` en el puerto 3000, detenlo: con el perfil `gateway` el microservicio corre en Docker. Para volver al modo de desarrollo: `docker compose --profile gateway stop busqueda kong`.
+
+---
+
 ## Frontend (busqueda-frontend)
 
-El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend en `http://localhost:3000` (CORS habilitado).
+El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend en `http://localhost:3000` (CORS habilitado). Para consumirlo a través de Kong, copia `busqueda-frontend/.env.example` como `.env` (`VITE_API_URL=http://localhost:8000/api/busqueda`).
 
 1. Asegúrate de que el backend esté corriendo (ver pasos anteriores).
 2. Entra a la carpeta del frontend:

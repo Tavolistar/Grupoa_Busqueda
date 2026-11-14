@@ -44,8 +44,11 @@ async function iniciarConsumidor() {
         case "ProductoCreado":
         case "ProductoActualizado":
           // id, nombre, precio, categoria confirmados. descripcion/stock aún no llegan
+          // wait_for: el cambio debe ser visible antes de invalidar la caché; si no, la siguiente
+          // búsqueda lee el dato viejo y lo vuelve a guardar en caché por 5 minutos
           await esClient.update({
             index: "productos", id: payload.id,
+            refresh: "wait_for",
             doc: {
               ...payload,
               activo: true,
@@ -63,6 +66,7 @@ async function iniciarConsumidor() {
         case "ProductoDesactivado":
           await esClient.update({
             index: "productos", id: payload.id,
+            refresh: "wait_for",
             doc: { activo: false, actualizadoEn: new Date().toISOString() },
           });
           if (payload.id) {
