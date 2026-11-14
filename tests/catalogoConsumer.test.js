@@ -57,19 +57,31 @@ describe("caché al recibir eventos", () => {
       assertExchange: jest.fn(async () => ({})),
       assertQueue: jest.fn(async () => ({})),
       bindQueue: jest.fn(async () => ({})),
+      prefetch: jest.fn(async () => ({})),
       consume: jest.fn(async (cola, fn) => { alConsumir = fn; }),
       ack: jest.fn(),
       nack: jest.fn(),
     };
+    const update = jest.fn(async () => ({}));
     jest.doMock("amqplib", () => ({ connect: async () => ({ createChannel: async () => canal }) }));
-    jest.doMock("../src/infrastructure/elasticsearch/client", () => ({ update: jest.fn(async () => ({})) }));
+    jest.doMock("../src/infrastructure/elasticsearch/client", () => ({ update }));
     jest.doMock("../src/infrastructure/cache/cacheBusqueda", () => ({ invalidarCachePorProducto, invalidarTodaLaBusqueda }));
     const { iniciarConsumidor } = require("../src/infrastructure/rabbitmq/catalogoConsumer");
     await iniciarConsumidor();
     await alConsumir({ content: Buffer.from(JSON.stringify(payload)), fields: { routingKey } });
     expect(canal.ack).toHaveBeenCalled();
-    return { invalidarCachePorProducto, invalidarTodaLaBusqueda };
+    return { invalidarCachePorProducto, invalidarTodaLaBusqueda, canal, update };
   }
+
+  test("procesa un evento a la vez para conservar el orden de cada producto", async () => {
+    const { canal } = await procesar("producto.actualizado", camiseta);
+    expect(canal.prefetch).toHaveBeenCalledWith(1);
+  });
+
+  test("el cambio queda visible antes de borrar la caché y reintenta conflictos de versión", async () => {
+    const { update } = await procesar("producto.reactivado", camiseta);
+    expect(update).toHaveBeenCalledWith(expect.objectContaining({ refresh: true, retry_on_conflict: 3 }));
+  });
 
   test("un producto reactivado borra todas las búsquedas guardadas", async () => {
     const { invalidarTodaLaBusqueda } = await procesar("producto.reactivado", camiseta);

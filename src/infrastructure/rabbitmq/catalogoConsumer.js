@@ -49,7 +49,11 @@ async function iniciarConsumidor() {
   for (const routingKey of Object.keys(ROUTING_KEYS)) {
     await channel.bindQueue(QUEUE, EXCHANGE, routingKey);
   }
- 
+
+  // Un evento a la vez y en orden: si dos eventos del mismo producto se procesan en paralelo,
+  // Elasticsearch responde conflicto de versión o "documento no existe" y el evento termina en la DLQ
+  await channel.prefetch(1);
+
   channel.consume(QUEUE, async (msg) => {
     if (!msg) return;
     const tipoEvento = ROUTING_KEYS[msg.fields.routingKey];
@@ -59,8 +63,12 @@ async function iniciarConsumidor() {
         case "ProductoCreado":
         case "ProductoActualizado":
         case "ProductoReactivado":
+          // refresh: el cambio debe ser visible antes de borrar la caché; si no, la siguiente
+          // búsqueda lee el dato viejo y lo vuelve a guardar en caché por 5 minutos
           await esClient.update({
             index: "productos", id: payload.id,
+            refresh: true,
+            retry_on_conflict: 3,
             doc: documentoDeProducto(payload),
             doc_as_upsert: true,
           });
@@ -73,6 +81,8 @@ async function iniciarConsumidor() {
         case "ProductoDesactivado":
           await esClient.update({
             index: "productos", id: payload.id,
+            refresh: true,
+            retry_on_conflict: 3,
             doc: { activo: false, actualizadoEn: new Date().toISOString() },
           });
           if (payload.id) {

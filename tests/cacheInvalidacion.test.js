@@ -96,6 +96,7 @@ jest.mock("amqplib", () => {
     assertExchange: assertExchangeMock,
     assertQueue: assertQueueMock,
     bindQueue: bindQueueMock,
+    prefetch: jest.fn(async () => ({})),
     consume: consumeMock,
     ack: ackMock,
     nack: nackMock,

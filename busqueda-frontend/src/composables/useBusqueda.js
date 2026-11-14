@@ -2,9 +2,7 @@
 // Estado compartido de búsqueda + filtros. Marlon y Jhoan solo LEEN/ESCRIBEN `filtros`
 // y llaman a `buscar()`; no deben tocar este archivo (si falta algo, pídelo al SM).
 import { ref, reactive } from "vue";
-
-// Por Kong, el API Gateway de la tienda. VITE_API_URL lo cambia (por ejemplo, para ir directo al 3000).
-const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api/busqueda";
+import { API } from "../api";
 
 export function useBusqueda() {
   const filtros = reactive({
