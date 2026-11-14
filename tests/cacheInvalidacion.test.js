@@ -154,6 +154,7 @@ describe("Invalidación de caché por evento y DLQ", () => {
     const invalidarCachePorProductoMock = jest.fn(async () => true);
     jest.doMock("../src/infrastructure/cache/cacheBusqueda", () => ({
       invalidarCachePorProducto: invalidarCachePorProductoMock,
+      invalidarTodaLaBusqueda: jest.fn(async () => true),
     }));
     jest.doMock("../src/infrastructure/elasticsearch/client", () => ({
       update: jest.fn(async () => ({})),
@@ -168,7 +169,7 @@ describe("Invalidación de caché por evento y DLQ", () => {
 
     const msg = {
       content: Buffer.from(JSON.stringify({ id: "P123", nombre: "Test" })),
-      fields: { routingKey: "catalogo.producto.actualizado" },
+      fields: { routingKey: "producto.actualizado" },
     };
 
     await callback(msg);
