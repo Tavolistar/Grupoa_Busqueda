@@ -1,0 +1,8 @@
+node_modules
+busqueda-frontend
+.git
+.github
+.env
+.kilo
+*.docx
+*.pdf

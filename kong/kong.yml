@@ -1,0 +1,43 @@
+# Configuración declarativa de Kong (modo sin base de datos).
+# Kong es el único punto de entrada público: el Cliente Web llama a http://localhost:8000/api/busqueda/...
+_format_version: "3.0"
+
+services:
+  - name: busqueda
+    url: http://busqueda:3000
+    connect_timeout: 5000
+    read_timeout: 10000
+    routes:
+      - name: busqueda-api
+        paths:
+          - /api/busqueda
+        strip_path: false
+        methods:
+          - GET
+          - OPTIONS
+
+plugins:
+  # El navegador llama a Kong desde otro origen (Vite en el puerto 5173)
+  - name: cors
+    service: busqueda
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - OPTIONS
+      exposed_headers:
+        - X-Cache
+  # Protege al microservicio de abusos; el límite deja margen para las pruebas manuales
+  - name: rate-limiting
+    service: busqueda
+    config:
+      minute: 600
+      policy: local
+  # Cada petición lleva un id que aparece en la respuesta para rastrearla
+  - name: correlation-id
+    service: busqueda
+    config:
+      header_name: X-Request-Id
+      generator: uuid
+      echo_downstream: true

@@ -124,9 +124,48 @@ npm run seed
 
 ---
 
+### 6. API Gateway (Kong) e integración con Catálogo (Sprint 4)
+
+> **En la tienda integrada** el Kong, el RabbitMQ y el `docker-compose` los opera el Equipo B en el repositorio del Host App, que construye Búsqueda desde `main`. El perfil `gateway` de este repositorio es una réplica local para probar Búsqueda sola, con la misma ruta `/api/busqueda`.
+
+Con el perfil `gateway`, el microservicio corre en su propio contenedor y **Kong** queda como único punto de entrada público:
+
+```bash
+docker compose --profile gateway up -d --build
+```
+
+| Servicio | URL | Uso |
+| -------- | --- | --- |
+| Kong (proxy) | http://localhost:8000/api/busqueda/... | Entrada pública: CORS, límite de 600 peticiones/minuto e id de petición (`X-Request-Id`) |
+| Kong (admin) | http://127.0.0.1:8001 | Solo local, para consultar la configuración |
+| Microservicio | interno, `busqueda:3000` | No se expone al exterior |
+
+La configuración de Kong está en `kong/kong.yml` (modo declarativo, sin base de datos).
+
+**Simular eventos de Catálogo** con el contrato de Catálogo (exchange `catalogo.eventos`, routing keys `producto.*`):
+
+```bash
+node scripts/publicarEventoCatalogo.js creado p100 "Bufanda de lana" 45000 cat-accesorios 10
+node scripts/publicarEventoCatalogo.js actualizado p100 "Bufanda de lana gris" 39000 cat-accesorios 9
+node scripts/publicarEventoCatalogo.js desactivado p100
+node scripts/publicarEventoCatalogo.js reactivado p100 "Bufanda de lana gris" 39000 cat-accesorios 9
+```
+
+**Prueba end-to-end** (Kong → microservicio → Elasticsearch/Redis, con eventos reales por RabbitMQ):
+
+```bash
+node scripts/e2e.js
+```
+
+Verifica 9 casos: enrutamiento de búsqueda y sugerencias, validación 400, alta de producto por evento, caché (HIT), invalidación al actualizar, baja al desactivar, reactivación con la búsqueda en caché y que un `actualizado` con `activo: false` no traiga de vuelta el producto.
+
+> Si antes corrías `npm start` en el puerto 3000, detenlo: con el perfil `gateway` el microservicio corre en Docker. Para volver al modo de desarrollo: `docker compose --profile gateway stop busqueda kong`.
+
+---
+
 ## Frontend (busqueda-frontend)
 
-El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend en `http://localhost:3000` (CORS habilitado).
+El frontend está construido con Vue 3 + Vite (JavaScript), corre en el puerto **5174** (el 5173 es de Catálogo) y consume la API por Kong en `http://localhost:8000/api/busqueda`. Para desarrollar sin Kong, copia `busqueda-frontend/.env.example` como `.env` (`VITE_API_URL=http://localhost:3000/api/busqueda`). Dentro del Host App oculta su título y, al pulsar un resultado, le pide al Host App abrir el detalle en Catálogo.
 
 1. Asegúrate de que el backend esté corriendo (ver pasos anteriores).
 2. Entra a la carpeta del frontend:
@@ -141,4 +180,4 @@ El frontend está construido con Vue 3 + Vite (JavaScript) y consume el backend 
    ```bash
    npm run dev
    ```
-5. Abre http://localhost:5173
+5. Abre http://localhost:5174
