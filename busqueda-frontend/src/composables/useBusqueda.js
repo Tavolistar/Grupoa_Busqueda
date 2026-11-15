@@ -2,8 +2,7 @@
 // Estado compartido de búsqueda + filtros. Marlon y Jhoan solo LEEN/ESCRIBEN `filtros`
 // y llaman a `buscar()`; no deben tocar este archivo (si falta algo, pídelo al SM).
 import { ref, reactive } from "vue";
-
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api/busqueda";
+import { API } from "../api";
 
 export function useBusqueda() {
   const filtros = reactive({

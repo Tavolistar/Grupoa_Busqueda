@@ -169,9 +169,33 @@ async function invalidarCachePorProducto(productoId) {
   }
 }
 
+// Un producto que entra al índice (creado o reactivado) puede aparecer en cualquier búsqueda,
+// también en las que hoy están guardadas con 0 resultados. Esas no están en el índice por producto,
+// así que se borran todas las búsquedas guardadas.
+async function invalidarTodaLaBusqueda() {
+  try {
+    const client = await getClient();
+    if (!client || typeof client.scanIterator !== "function") {
+      return false;
+    }
+    const claves = [];
+    for await (const clave of client.scanIterator({ MATCH: `${PREFIX_BUSQUEDA}:*`, COUNT: 100 })) {
+      claves.push(clave);
+    }
+    for (const clave of claves) {
+      await client.del(clave);
+    }
+    return true;
+  } catch (err) {
+    console.warn("[cacheBusqueda] invalidarTodaLaBusqueda fallo (graceful):", err && err.message ? err.message : err);
+    return false;
+  }
+}
+
 module.exports = {
   obtenerBusqueda,
   guardarBusqueda,
   generarClave,
   invalidarCachePorProducto,
+  invalidarTodaLaBusqueda,
 };

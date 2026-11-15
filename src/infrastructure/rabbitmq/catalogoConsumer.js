@@ -1,16 +1,31 @@
 const amqp = require("amqplib");
 const esClient = require("../elasticsearch/client");
-const { invalidarCachePorProducto } = require("../../infrastructure/cache/cacheBusqueda");
+const { invalidarCachePorProducto, invalidarTodaLaBusqueda } = require("../../infrastructure/cache/cacheBusqueda");
  
-// Decidido en la reunión de planificación del Sprint 1:
-const EXCHANGE = "catalogo.events";
+// Exchange y routing keys del contrato de Catálogo (sección 5).
+const EXCHANGE = "catalogo.eventos";
 const EXCHANGE_TYPE = "topic";
 const QUEUE = "busqueda.catalogo.eventos";
 const ROUTING_KEYS = {
-  "catalogo.producto.creado": "ProductoCreado",
-  "catalogo.producto.actualizado": "ProductoActualizado",
-  "catalogo.producto.desactivado": "ProductoDesactivado",
+  "producto.creado": "ProductoCreado",
+  "producto.actualizado": "ProductoActualizado",
+  "producto.desactivado": "ProductoDesactivado",
+  "producto.reactivado": "ProductoReactivado",
 };
+
+// El documento que se guarda en Elasticsearch para un evento con el producto completo
+// (creado, actualizado y reactivado). El estado sale del evento: un producto desactivado que se
+// edita publica "producto.actualizado" con activo: false y no debe volver a la búsqueda.
+function documentoDeProducto(payload, ahora = new Date()) {
+  return {
+    ...payload,
+    activo: payload.activo !== false,
+    actualizadoEn: ahora.toISOString(),
+    sugerencia: {
+      input: [payload.nombre, ...String(payload.nombre || "").split(/\s+/).filter(Boolean)],
+    },
+  };
+}
 
 const DLX_EXCHANGE = "busqueda.dlx";
 const DLX_ROUTING_KEY = "busqueda.dlq.key";
@@ -34,7 +49,11 @@ async function iniciarConsumidor() {
   for (const routingKey of Object.keys(ROUTING_KEYS)) {
     await channel.bindQueue(QUEUE, EXCHANGE, routingKey);
   }
- 
+
+  // Un evento a la vez y en orden: si dos eventos del mismo producto se procesan en paralelo,
+  // Elasticsearch responde conflicto de versión o "documento no existe" y el evento termina en la DLQ
+  await channel.prefetch(1);
+
   channel.consume(QUEUE, async (msg) => {
     if (!msg) return;
     const tipoEvento = ROUTING_KEYS[msg.fields.routingKey];
@@ -43,26 +62,27 @@ async function iniciarConsumidor() {
       switch (tipoEvento) {
         case "ProductoCreado":
         case "ProductoActualizado":
-          // id, nombre, precio, categoria confirmados. descripcion/stock aún no llegan
+        case "ProductoReactivado":
+          // refresh: el cambio debe ser visible antes de borrar la caché; si no, la siguiente
+          // búsqueda lee el dato viejo y lo vuelve a guardar en caché por 5 minutos
           await esClient.update({
             index: "productos", id: payload.id,
-            doc: {
-              ...payload,
-              activo: true,
-              actualizadoEn: new Date().toISOString(),
-              sugerencia: {
-                input: [payload.nombre, ...String(payload.nombre || "").split(/\s+/).filter(Boolean)],
-              },
-            },
+            refresh: true,
+            retry_on_conflict: 3,
+            doc: documentoDeProducto(payload),
             doc_as_upsert: true,
           });
-          if (payload.id) {
+          if (tipoEvento === "ProductoActualizado") {
             await invalidarCachePorProducto(payload.id);
+          } else {
+            await invalidarTodaLaBusqueda();
           }
           break;
         case "ProductoDesactivado":
           await esClient.update({
             index: "productos", id: payload.id,
+            refresh: true,
+            retry_on_conflict: 3,
             doc: { activo: false, actualizadoEn: new Date().toISOString() },
           });
           if (payload.id) {
@@ -79,4 +99,4 @@ async function iniciarConsumidor() {
     }
   });
 }
-module.exports = { iniciarConsumidor };
+module.exports = { iniciarConsumidor, documentoDeProducto, EXCHANGE, ROUTING_KEYS };

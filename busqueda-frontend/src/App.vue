@@ -10,6 +10,14 @@ import DrawerFiltros from './components/DrawerFiltros.vue'
 import { useBusqueda } from './composables/useBusqueda'
 
 const { filtros, resultado, cargando, error, buscar, limpiarFiltros } = useBusqueda()
+
+// Dentro del Host App el módulo corre en un iframe: el encabezado lo pone el Host App.
+const embebido = window.self !== window.top
+
+// Al pulsar un resultado, el Host App abre su detalle en Catálogo (mensaje "navegar").
+function verProducto(producto) {
+  if (embebido) window.parent.postMessage({ tipo: 'navegar', ruta: '/catalogo/' + producto.id }, '*')
+}
 const consultaRealizada = ref(false)
 
 const formatoPrecio = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 })
@@ -86,7 +94,7 @@ function etiquetaCategoria(c) {
 
 <template>
   <main class="busqueda">
-    <h1>Búsqueda de productos</h1>
+    <h1 v-if="!embebido">Búsqueda de productos</h1>
     <SearchBar @buscar="onBuscar" />
 
     <FiltrosActivos
@@ -115,7 +123,17 @@ function etiquetaCategoria(c) {
         <p v-else-if="error">{{ error }}</p>
         <template v-else-if="resultado.total > 0">
           <ul class="productos">
-            <li v-for="producto in resultado.productos" :key="producto.id" class="tarjeta">
+            <li
+              v-for="producto in resultado.productos"
+              :key="producto.id"
+              class="tarjeta"
+              :class="{ enlace: embebido }"
+              @click="verProducto(producto)"
+            >
+              <!-- Contrato de Catálogo v2.6: el evento trae "imagenes". -->
+              <div class="foto">
+                <img v-if="producto.imagenes?.length" :src="producto.imagenes[0]" :alt="producto.nombre" loading="lazy" />
+              </div>
               <strong class="nombre">{{ producto.nombre }}</strong>
               <span class="precio">{{ formatoPrecio.format(producto.precio) }}</span>
               <span v-if="producto.categoria" class="categoria">{{ String(producto.categoria).replace(/^cat-/, '') }}</span>
@@ -196,6 +214,28 @@ main.busqueda .search-bar {
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--code-bg);
+}
+
+/* Recuadro 4:3 fijo, con o sin foto, para que las tarjetas de una fila queden parejas. */
+.tarjeta .foto {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  margin: -12px -12px 4px;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.tarjeta .foto img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tarjeta.enlace {
+  cursor: pointer;
 }
 
 .tarjeta .nombre {
