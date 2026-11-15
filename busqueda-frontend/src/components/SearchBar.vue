@@ -7,10 +7,26 @@ const texto = ref('')
 const sugerencias = ref([])
 const mostrando = ref(false)
 let temporizador = null
+// Cambia en cada búsqueda: una respuesta de sugerencias que llega después de buscar se descarta,
+// para que la lista no se abra encima de los resultados
+let generacion = 0
 
 function buscar() {
+  clearTimeout(temporizador)
+  generacion++
   emit('buscar', texto.value)
   mostrando.value = false
+}
+
+// Varios productos pueden sugerir el mismo texto (por ejemplo, "Gorra"): se muestra una sola vez
+function sinRepetidos(lista) {
+  const vistos = new Set()
+  return lista.filter((s) => {
+    const clave = `${s.tipo}:${String(s.texto).toLowerCase()}`
+    if (vistos.has(clave)) return false
+    vistos.add(clave)
+    return true
+  })
 }
 
 function alEscribir() {
@@ -21,14 +37,16 @@ function alEscribir() {
     mostrando.value = false
     return
   }
+  const pedido = generacion
   temporizador = setTimeout(async () => {
     try {
       const respuesta = await fetch(
         `${API}/sugerencias?q=${encodeURIComponent(q)}`
       )
-      if (!respuesta.ok) return
+      if (!respuesta.ok || pedido !== generacion) return
       const datos = await respuesta.json()
-      sugerencias.value = datos.sugerencias || []
+      if (pedido !== generacion) return
+      sugerencias.value = sinRepetidos(datos.sugerencias || [])
       mostrando.value = sugerencias.value.length > 0
     } catch {
       sugerencias.value = []
