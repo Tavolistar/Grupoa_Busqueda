@@ -14,7 +14,7 @@ Este contrato dice qué ofrece Búsqueda a los demás equipos (API REST y micro-
 | B — Host App | Cargar el frontend de Búsqueda en el puerto `5174` y atender el mensaje `navegar` | 3 |
 | B — Kong | Ruta `/api/busqueda` hacia `busqueda:3000`, sin quitar el prefijo | 1 y 4 |
 | B — Catálogo | Seguir publicando según su sección 5; Búsqueda no llama a Catálogo | 2 |
-| B — docker-compose de integración | Construir Búsqueda desde `main` con las variables de la sección 4 | 4 |
+| B — docker-compose de integración | Construir Búsqueda desde `main` con las variables de la sección 4, incluida `EUREKA_URL` | 4 |
 | C — Carrito | Nada: Carrito no usa Búsqueda | — |
 
 ---
@@ -165,8 +165,23 @@ window.parent.postMessage({ tipo: 'navegar', ruta: '/catalogo/{id}' }, '*')
 | `ELASTICSEARCH_URL` | `http://elasticsearch:9200` |
 | `REDIS_URL` | `redis://redis:6379` |
 | `RABBITMQ_URL` | `amqp://usuario:clave@rabbitmq:5672` (el RabbitMQ de Catálogo) |
+| `EUREKA_URL` | `http://eureka:8761/eureka`. Opcional: sin ella, Búsqueda no se registra |
 
 Al arrancar, Búsqueda crea su índice si no existe. Si Redis no responde, la búsqueda sigue funcionando sin caché.
+
+### 4.1. Registro en Eureka
+
+Búsqueda se anuncia en el registro de servicios de la tienda (consola en `http://localhost:8761`) usando la API REST de Eureka:
+
+| Elemento | Valor |
+| -------- | ----- |
+| Nombre de la aplicación | `BUSQUEDA` |
+| Instancia | `{hostname}:busqueda:3000`, con la IP del contenedor en la red de Docker y el puerto `3000` |
+| URL de salud | `http://{ip}:3000/api/busqueda/productos` |
+| Estado | `UP` mientras Elasticsearch responde; `DOWN` si deja de responder, y vuelve a `UP` cuando se recupera |
+| Latido | Cada 10 s. Eureka lo saca si pasan 30 s sin latido |
+| Al apagarse | Con `SIGTERM` o `SIGINT` (por ejemplo, `docker stop`) se da de baja en Eureka |
+| Si Eureka no responde | Búsqueda sigue funcionando y reintenta el registro en el siguiente latido |
 
 ---
 
@@ -189,5 +204,6 @@ Medidas con 10 000 productos y 20 conexiones concurrentes (`npm run carga`):
 | Encabezado `X-Cache` | Sí |
 | Eventos de Catálogo: exchange `catalogo.eventos`, routing keys `producto.*`, nuevo `producto.reactivado`, se respeta `activo` | Interno de Búsqueda |
 | Frontend en el puerto 5174, por Kong y con el mensaje `navegar` | Sí |
+| Registro en Eureka (`EUREKA_URL`) | Sí, opcional |
 
 **Para preguntar o pedir cambios:** al Scrum Master del Equipo A, indicando la sección.

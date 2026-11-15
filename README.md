@@ -93,6 +93,8 @@ npm run seed
 npm test
 ```
 
+**Registro en Eureka (tienda integrada):** si la variable `EUREKA_URL` está definida (por ejemplo `http://eureka:8761/eureka`), al arrancar el servicio se registra en Eureka como `BUSQUEDA`, manda un latido cada 10 s, se marca `DOWN` si Elasticsearch no responde y se da de baja al apagarse. Sin `EUREKA_URL` no hace nada, así que el desarrollo local y las pruebas no cambian. Detalle en `docs/CONTRATO-BUSQUEDA.md`, sección 4.1.
+
 ---
 
 ### 5. Pruebas de carga (rendimiento - HU-SRCH-11b)
