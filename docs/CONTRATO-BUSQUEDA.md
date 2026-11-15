@@ -50,7 +50,8 @@ Busca productos **activos** en el índice de Búsqueda.
   "productos": [
     { "id": "674000000000000000000001", "nombre": "Camiseta básica algodón",
       "descripcion": "Camiseta unisex 100% algodón.", "precio": 49900,
-      "categoria": "cat-ropa", "stock": 100, "activo": true }
+      "categoria": "cat-ropa", "stock": 100, "activo": true,
+      "imagenes": ["https://.../camiseta.jpg"] }
   ],
   "total": 1,
   "pagina": 1,
@@ -119,7 +120,7 @@ Búsqueda **nunca** consulta la base de datos ni la API de Catálogo para buscar
 
 | Routing key | Qué hace Búsqueda | Campos que usa |
 | ----------- | ----------------- | -------------- |
-| `producto.creado` | Agrega el producto al índice y borra **todas** las búsquedas guardadas | `id`, `nombre`, `descripcion`, `precio`, `categoria`, `stock`, `activo`, `fecha` |
+| `producto.creado` | Agrega el producto al índice y borra **todas** las búsquedas guardadas | `id`, `nombre`, `descripcion`, `precio`, `categoria`, `stock`, `activo`, `fecha` e `imagenes` (desde Catálogo v2.6) |
 | `producto.actualizado` | Reemplaza sus datos (también el stock) y borra **solo las búsquedas donde aparecía**. Respeta `activo`: si llega `activo: false`, sigue fuera de la búsqueda | Los mismos |
 | `producto.reactivado` | Lo vuelve a mostrar y borra **todas** las búsquedas guardadas | Los mismos |
 | `producto.desactivado` | Lo oculta (no se borra del índice) y borra las búsquedas donde aparecía | `id` |
@@ -138,6 +139,7 @@ Búsqueda **nunca** consulta la base de datos ni la API de Catálogo para buscar
 | API que consume | `http://localhost:8000/api/busqueda` (Kong). Se puede cambiar con `VITE_API_URL` |
 | Dentro del Host App | Detecta que corre en un iframe (`window.self !== window.top`) y **oculta su título** «Búsqueda de productos» |
 | Fuera del Host App | Funciona solo, con su título |
+| Resultados | Cada tarjeta muestra la primera foto de `imagenes` en un recuadro 4:3; sin foto, el recuadro queda vacío |
 
 **Mensaje que envía al Host App** al pulsar un resultado:
 
@@ -205,5 +207,6 @@ Medidas con 10 000 productos y 20 conexiones concurrentes (`npm run carga`):
 | Eventos de Catálogo: exchange `catalogo.eventos`, routing keys `producto.*`, nuevo `producto.reactivado`, se respeta `activo` | Interno de Búsqueda |
 | Frontend en el puerto 5174, por Kong y con el mensaje `navegar` | Sí |
 | Registro en Eureka (`EUREKA_URL`) | Sí, opcional |
+| Fotos de los productos (`imagenes`, Catálogo v2.6) | Sí, campo nuevo |
 
 **Para preguntar o pedir cambios:** al Scrum Master del Equipo A, indicando la sección.
