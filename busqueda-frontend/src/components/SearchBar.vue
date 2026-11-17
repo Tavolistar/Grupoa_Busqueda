@@ -1,56 +1,105 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from 'vue'
 import { API_BASE } from '../composables/useBusqueda'
 
 const emit = defineEmits(['buscar'])
 const texto = ref('')
 const sugerencias = ref([])
 const mostrando = ref(false)
-let temporizador = null
+const raiz = ref(null)
+
+// Debounce de sugerencias (autocompletado) y de búsqueda en tiempo real
+const TEMPORIZADOR_SUGERENCIAS = 300
+const TEMPORIZADOR_BUSQUEDA = 350
+let temporizadorSugerencias = null
+let temporizadorBusqueda = null
+let controladorSugerencias = null
 
 function buscar() {
-  emit('buscar', texto.value)
+  clearTimeout(temporizadorSugerencias)
+  clearTimeout(temporizadorBusqueda)
   mostrando.value = false
+  sugerencias.value = []
+  emit('buscar', texto.value.trim())
 }
 
 function alEscribir() {
-  clearTimeout(temporizador)
+  clearTimeout(temporizadorSugerencias)
+  clearTimeout(temporizadorBusqueda)
+
   const q = texto.value.trim()
+
+  // Búsqueda en tiempo real: si se vacía el texto, restaurar todos los productos ya.
+  if (q === '') {
+    emit('buscar', '')
+  } else {
+    temporizadorBusqueda = setTimeout(() => {
+      emit('buscar', texto.value.trim())
+    }, TEMPORIZADOR_BUSQUEDA)
+  }
+
+  // Autocompletado de sugerencias (mínimo 2 caracteres)
   if (q.length < 2) {
     sugerencias.value = []
     mostrando.value = false
     return
   }
-  temporizador = setTimeout(async () => {
+
+  temporizadorSugerencias = setTimeout(async () => {
+    if (controladorSugerencias) controladorSugerencias.abort()
+    const ctrl = new AbortController()
+    controladorSugerencias = ctrl
     try {
       const respuesta = await fetch(
-        `${API_BASE}/sugerencias?q=${encodeURIComponent(q)}`
+        `${API_BASE}/sugerencias?q=${encodeURIComponent(q)}`,
+        { signal: ctrl.signal }
       )
       if (!respuesta.ok) return
       const datos = await respuesta.json()
+      if (ctrl.signal.aborted) return
       sugerencias.value = datos.sugerencias || []
       mostrando.value = sugerencias.value.length > 0
     } catch {
       sugerencias.value = []
       mostrando.value = false
     }
-  }, 300)
+  }, TEMPORIZADOR_SUGERENCIAS)
 }
 
 function elegir(sugerencia) {
+  clearTimeout(temporizadorSugerencias)
+  clearTimeout(temporizadorBusqueda)
   texto.value = sugerencia.texto
-  buscar()
+  sugerencias.value = []
+  mostrando.value = false
+  emit('buscar', texto.value.trim())
 }
 
-function ocultar() {
-  setTimeout(() => {
-    mostrando.value = false
-  }, 150)
+function cerrar() {
+  mostrando.value = false
 }
+
+// Cierra el dropdown al hacer clic fuera del componente
+function alClicFuera(e) {
+  if (raiz.value && !raiz.value.contains(e.target)) mostrando.value = false
+}
+
+// Cierra el dropdown cuando el foco abandona el componente (navegación con teclado)
+function alPerderFoco(e) {
+  if (!e.currentTarget.contains(e.relatedTarget)) mostrando.value = false
+}
+
+onMounted(() => document.addEventListener('click', alClicFuera))
+onBeforeUnmount(() => {
+  document.removeEventListener('click', alClicFuera)
+  clearTimeout(temporizadorSugerencias)
+  clearTimeout(temporizadorBusqueda)
+  if (controladorSugerencias) controladorSugerencias.abort()
+})
 </script>
 
 <template>
-  <div class="search-bar">
+  <div ref="raiz" class="search-bar" @focusout="alPerderFoco">
     <div class="input-wrap">
       <input
         v-model="texto"
@@ -58,9 +107,8 @@ function ocultar() {
         placeholder="Buscar productos..."
         @input="alEscribir"
         @keyup.enter="buscar"
-        @keydown.esc="mostrando = false"
+        @keydown.esc="cerrar"
         @focus="mostrando = sugerencias.length > 0"
-        @blur="ocultar"
       />
       <ul v-if="mostrando && sugerencias.length" class="sugerencias">
         <li
