@@ -47,6 +47,9 @@ const mappings = {
     stock: { type: "integer" },
     activo: { type: "boolean" },
     actualizadoEn: { type: "date" },
+    // Catalogo v2.6: arreglo de strings con las URLs/rutas de las imágenes del producto.
+    // Se almacena como keyword para conservarlo íntegro y devolverlo tal cual.
+    imagenes: { type: "keyword" },
     sugerencia: { type: "completion" },
   },
 };

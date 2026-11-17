@@ -3,7 +3,9 @@
 // y llaman a `buscar()`; no deben tocar este archivo (si falta algo, pídelo al SM).
 import { ref, reactive } from "vue";
 
-const API = import.meta.env.VITE_API_URL || "http://localhost:3000/api/busqueda";
+// URL base de la API centralizada: se usa en las búsquedas y en las sugerencias.
+// El Host App puede inyectar VITE_API_URL en el build/entorno de integración.
+export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api/busqueda";
 
 export function useBusqueda() {
   const filtros = reactive({
@@ -47,7 +49,7 @@ export function useBusqueda() {
     cargando.value = true;
     error.value = null;
     try {
-      const res = await fetch(`${API}/productos?${construirParams()}`);
+      const res = await fetch(`${API_BASE}/productos?${construirParams()}`);
       const datos = await res.json();
       if (!res.ok) throw new Error(datos.error || "Error en la búsqueda");
       resultado.value = { facetas: { categorias: [] }, ...datos };
