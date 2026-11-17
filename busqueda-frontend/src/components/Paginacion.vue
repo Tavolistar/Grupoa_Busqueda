@@ -75,8 +75,13 @@ function ir(n) {
   padding: 4px 10px;
 }
 .controles button.actual {
-  font-weight: bold;
-  text-decoration: underline;
+  background: var(--acento);
+  border-color: var(--acento);
+  color: #fff;
+}
+.rango {
+  color: var(--texto-suave);
+  font-size: 13px;
 }
 .salto {
   padding: 0 4px;

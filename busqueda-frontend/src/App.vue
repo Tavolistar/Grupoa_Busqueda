@@ -202,7 +202,7 @@ main.busqueda .search-bar {
   margin: 12px 0;
   display: grid;
   gap: 12px;
-  /* 1 columna en celular y hasta 4 en escritorio, según el espacio disponible */
+  /* Hasta 4 columnas en escritorio, según el espacio disponible (2 en celular, abajo) */
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 190px), 1fr));
 }
 
@@ -210,20 +210,21 @@ main.busqueda .search-bar {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px;
+  padding: 12px 14px 14px;
   border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--code-bg);
+  border-radius: var(--radio);
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  overflow: hidden;
 }
 
 /* Recuadro 4:3 fijo, con o sin foto, para que las tarjetas de una fila queden parejas. */
 .tarjeta .foto {
   position: relative;
   aspect-ratio: 4 / 3;
-  margin: -12px -12px 4px;
-  border-radius: 8px 8px 0 0;
+  margin: -12px -14px 6px;
   overflow: hidden;
-  background: var(--bg);
+  background: var(--fondo-suave);
 }
 
 .tarjeta .foto img {
@@ -236,15 +237,84 @@ main.busqueda .search-bar {
 
 .tarjeta.enlace {
   cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.tarjeta.enlace:hover {
+  border-color: var(--acento);
 }
 
 .tarjeta .nombre {
   color: var(--text-h);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
 }
 
+.tarjeta .precio {
+  order: 1;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+/* La categoría va arriba del nombre, en versalitas, igual que en Catálogo. */
 .tarjeta .categoria {
-  font-size: 14px;
+  order: -1;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--texto-suave);
+}
+
+.tarjeta .foto {
+  order: -2;
+}
+
+/* Filtros que están aplicados, como etiquetas que se quitan con la x. */
+.filtros-activos {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.filtros-activos .chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 4px 2px 12px;
+  border-radius: 999px;
+  background: var(--acento-suave);
+  color: var(--acento);
+  font-size: 13px;
+  font-weight: 600;
   text-transform: capitalize;
+}
+
+.filtros-activos .chip button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  padding: 0 8px;
+}
+
+.orden-select {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  color: var(--texto-suave);
+  font-size: 14px;
+}
+
+/* Lo que se ve cuando la búsqueda no encuentra nada. */
+.resultados > p {
+  margin: 16px 0 8px;
+  color: var(--texto-suave);
 }
 
 /* Tamaño táctil mínimo de 44 px */
@@ -282,6 +352,14 @@ main.busqueda .search-bar {
   .contenido {
     grid-template-columns: 1fr;
     gap: 12px;
+  }
+}
+
+/* En el celular, dos tarjetas por fila, como el listado de Catálogo. */
+@media (max-width: 520px) {
+  .productos {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 }
 </style>

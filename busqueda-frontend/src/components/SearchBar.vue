@@ -109,8 +109,8 @@ function ocultar() {
   width: 100%;
   padding: 8px 12px;
   font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
   box-sizing: border-box;
 }
 .sugerencias {
@@ -121,10 +121,10 @@ function ocultar() {
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+  box-shadow: var(--sombra);
   z-index: 10;
   max-height: 240px;
   overflow-y: auto;
@@ -138,7 +138,7 @@ function ocultar() {
   cursor: pointer;
 }
 .sugerencias li:hover {
-  background: #f0f0f0;
+  background: var(--fondo-suave);
 }
 .tipo {
   font-size: 11px;
@@ -149,18 +149,22 @@ function ocultar() {
   flex-shrink: 0;
 }
 .tipo.producto {
-  background-color: #42b883;
+  background-color: var(--acento);
 }
 .tipo.categoria {
-  background-color: #f59e0b;
+  background-color: var(--aviso);
 }
 .search-bar button {
   padding: 8px 16px;
   font-size: 16px;
-  border: none;
-  border-radius: 6px;
-  background-color: #42b883;
+  border: 1px solid var(--acento);
+  border-radius: var(--radio-chico);
+  background-color: var(--acento);
   color: #fff;
   cursor: pointer;
+}
+.search-bar button:hover {
+  color: #fff;
+  opacity: 0.9;
 }
 </style>

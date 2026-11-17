@@ -57,6 +57,11 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  padding: 16px;
+  background: var(--superficie);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
 }
 
 @media (max-width: 767px) {
@@ -87,6 +92,8 @@ onBeforeUnmount(() => {
     background: var(--bg);
     box-shadow: var(--shadow);
     z-index: 30;
+    border: 0;
+    border-radius: 0;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
   }
