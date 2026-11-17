@@ -57,21 +57,30 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  background: #ffffff;
 }
 
 @media (max-width: 767px) {
   .abrir {
     display: inline-flex;
     align-items: center;
-    width: 100%;
     justify-content: center;
+    gap: 4px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #111827;
+    font-size: 16px;
+    cursor: pointer;
   }
 
   .fondo {
     display: block;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(17, 24, 39, 0.4);
     z-index: 20;
   }
 
@@ -84,8 +93,8 @@ onBeforeUnmount(() => {
     padding: 16px;
     box-sizing: border-box;
     overflow-y: auto;
-    background: var(--bg);
-    box-shadow: var(--shadow);
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(17, 24, 39, 0.15);
     z-index: 30;
     transform: translateX(-100%);
     transition: transform 0.2s ease;
@@ -107,12 +116,24 @@ onBeforeUnmount(() => {
 
   .cerrar {
     min-width: 44px;
+    border: none;
+    background: transparent;
+    color: #6b7280;
+    font-size: 18px;
+    cursor: pointer;
   }
 
   .ver {
     display: block;
     width: 100%;
     margin-top: auto;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #0f766e;
+    color: #ffffff;
+    font-size: 16px;
+    cursor: pointer;
   }
 }
 </style>

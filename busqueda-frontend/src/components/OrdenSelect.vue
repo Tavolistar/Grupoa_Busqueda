@@ -31,3 +31,31 @@ function onChange(e) {
   }
 }
 </script>
+
+<style scoped>
+.orden-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.orden-select label {
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.orden-select select {
+  padding: 8px 10px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #111827;
+}
+
+.orden-select select:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+}
+</style>

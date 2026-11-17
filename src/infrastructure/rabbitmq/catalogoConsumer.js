@@ -9,6 +9,7 @@ const QUEUE = "busqueda.catalogo.eventos";
 const ROUTING_KEYS = {
   "catalogo.producto.creado": "ProductoCreado",
   "catalogo.producto.actualizado": "ProductoActualizado",
+  "catalogo.producto.reactivado": "ProductoReactivado",
   "catalogo.producto.desactivado": "ProductoDesactivado",
 };
 
@@ -43,23 +44,32 @@ async function iniciarConsumidor() {
       switch (tipoEvento) {
         case "ProductoCreado":
         case "ProductoActualizado":
-          // id, nombre, precio, categoria confirmados. descripcion/stock aún no llegan
-          await esClient.update({
-            index: "productos", id: payload.id,
-            doc: {
-              ...payload,
-              activo: true,
-              actualizadoEn: new Date().toISOString(),
-              sugerencia: {
-                input: [payload.nombre, ...String(payload.nombre || "").split(/\s+/).filter(Boolean)],
-              },
+        case "ProductoReactivado": {
+          // id, nombre, precio, categoria confirmados. descripcion/stock aún no llegan.
+          // `imagenes` (Catalogo v2.6) es un arreglo de strings: se conserva íntegro
+          // tal como llega en el payload. Si no viene, no se incluye y no rompe nada.
+          const doc = {
+            ...payload,
+            activo: true,
+            actualizadoEn: new Date().toISOString(),
+            sugerencia: {
+              input: [payload.nombre, ...String(payload.nombre || "").split(/\s+/).filter(Boolean)],
             },
+          };
+          if (!Array.isArray(payload.imagenes)) {
+            delete doc.imagenes;
+          }
+          await esClient.update({
+            index: "productos",
+            id: payload.id,
+            doc,
             doc_as_upsert: true,
           });
           if (payload.id) {
             await invalidarCachePorProducto(payload.id);
           }
           break;
+        }
         case "ProductoDesactivado":
           await esClient.update({
             index: "productos", id: payload.id,

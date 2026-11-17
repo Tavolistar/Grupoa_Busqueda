@@ -1,5 +1,6 @@
 <script setup>
 import { ref } from 'vue'
+import { API_BASE } from '../composables/useBusqueda'
 
 const emit = defineEmits(['buscar'])
 const texto = ref('')
@@ -23,7 +24,7 @@ function alEscribir() {
   temporizador = setTimeout(async () => {
     try {
       const respuesta = await fetch(
-        `http://localhost:3000/api/busqueda/sugerencias?q=${encodeURIComponent(q)}`
+        `${API_BASE}/sugerencias?q=${encodeURIComponent(q)}`
       )
       if (!respuesta.ok) return
       const datos = await respuesta.json()
@@ -80,7 +81,8 @@ function ocultar() {
 .search-bar {
   display: flex;
   gap: 8px;
-  max-width: 560px;
+  max-width: 640px;
+  margin: 0 auto;
 }
 .input-wrap {
   position: relative;
@@ -88,11 +90,22 @@ function ocultar() {
 }
 .search-bar input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 10px 14px;
   font-size: 16px;
-  border: 1px solid #ccc;
-  border-radius: 6px;
+  color: #111827;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
   box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.search-bar input::placeholder {
+  color: #9ca3af;
+}
+.search-bar input:focus {
+  outline: none;
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
 }
 .sugerencias {
   position: absolute;
@@ -102,10 +115,10 @@ function ocultar() {
   margin: 4px 0 0;
   padding: 0;
   list-style: none;
-  background: #fff;
-  border: 1px solid #ccc;
-  border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.12);
   z-index: 10;
   max-height: 240px;
   overflow-y: auto;
@@ -115,33 +128,39 @@ function ocultar() {
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   cursor: pointer;
+  color: #111827;
 }
 .sugerencias li:hover {
-  background: #f0f0f0;
+  background: #f8fafc;
 }
 .tipo {
   font-size: 11px;
   padding: 2px 8px;
   border-radius: 999px;
-  color: #fff;
+  color: #ffffff;
   text-transform: capitalize;
   flex-shrink: 0;
 }
 .tipo.producto {
-  background-color: #42b883;
+  background-color: #0f766e;
 }
 .tipo.categoria {
-  background-color: #f59e0b;
+  background-color: #16a34a;
 }
 .search-bar button {
-  padding: 8px 16px;
+  padding: 10px 18px;
   font-size: 16px;
+  font-weight: 500;
   border: none;
-  border-radius: 6px;
-  background-color: #42b883;
-  color: #fff;
+  border-radius: 8px;
+  background-color: #0f766e;
+  color: #ffffff;
   cursor: pointer;
+  transition: background-color 0.15s;
+}
+.search-bar button:hover {
+  background-color: #115e59;
 }
 </style>

@@ -46,3 +46,35 @@ function toggle(id) {
   emit('update:seleccionadas', arr)
 }
 </script>
+
+<style scoped>
+.filtro-categorias {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filtro-categorias h3 {
+  margin: 0 0 6px;
+  color: #111827;
+}
+
+.categoria-item {
+  display: flex;
+  align-items: center;
+}
+
+.categoria-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  color: #111827;
+  cursor: pointer;
+}
+
+.categoria-item input[type='checkbox'] {
+  accent-color: #0f766e;
+}
+</style>

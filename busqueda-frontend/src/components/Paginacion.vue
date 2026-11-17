@@ -60,24 +60,49 @@ function ir(n) {
 <style scoped>
 .paginacion {
   margin: 16px 0;
+  color: #6b7280;
 }
+
 .rango {
   margin: 0 0 8px;
+  font-size: 14px;
 }
+
 .controles {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 6px;
 }
+
 .controles button {
   min-width: 36px;
   padding: 4px 10px;
+  border: 1px solid #d1d5db;
+  background: #ffffff;
+  color: #111827;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
 }
+
+.controles button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #0f766e;
+}
+
 .controles button.actual {
-  font-weight: bold;
-  text-decoration: underline;
+  background: #0f766e;
+  color: #ffffff;
+  border-color: #0f766e;
+  font-weight: 600;
 }
+
+.controles button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .salto {
   padding: 0 4px;
 }
