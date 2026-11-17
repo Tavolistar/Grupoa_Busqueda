@@ -11,12 +11,14 @@ import { useBusqueda } from './composables/useBusqueda'
 
 const { filtros, resultado, cargando, error, buscar, limpiarFiltros } = useBusqueda()
 const consultaRealizada = ref(false)
+// Indica la carga inicial (antes de que la primera búsqueda resuelva)
+const primeraCarga = ref(true)
 
 // Detecta si la app corre embebida en un iframe del Host App
 const embebido = window.self !== window.top
 
 // Ids de productos cuya imagen falló al cargar (muestra placeholder)
-const imagenesFallidas = ref(new Set())
+const imgFallidas = ref({})
 
 const formatoPrecio = new Intl.NumberFormat('es-CO', {
   style: 'currency',
@@ -101,16 +103,15 @@ function categoriaLimpia(c) {
 
 function imagenDe(producto) {
   const lista = producto.imagenes
-  if (Array.isArray(lista) && lista.length > 0 && !imagenesFallidas.value.has(producto.id)) {
+  if (Array.isArray(lista) && lista.length > 0 && !imgFallidas.value[producto.id]) {
     return lista[0]
   }
   return null
 }
 
 function onImgError(id) {
-  const copia = new Set(imagenesFallidas.value)
-  copia.add(id)
-  imagenesFallidas.value = copia
+  // Objeto reactivo: Vue re-renderiza al instante y muestra el placeholder.
+  imgFallidas.value[id] = true
 }
 
 // Navegación al catálogo del Host App (funciona dentro o fuera del iframe)
@@ -129,6 +130,7 @@ function onTarjetaKeydown(e, producto) {
 onMounted(() => {
   consultaRealizada.value = true
   buscar()
+  primeraCarga.value = false
 })
 </script>
 
@@ -159,7 +161,7 @@ onMounted(() => {
       <section class="resultados">
         <OrdenSelect :orden="filtros.orden" :direccion="filtros.direccion" @cambiar="onOrden" />
 
-        <p v-if="cargando">Cargando...</p>
+        <p v-if="cargando || primeraCarga" class="cargando">Cargando productos...</p>
         <p v-else-if="error">{{ error }}</p>
         <template v-else-if="resultado.total > 0">
           <ul class="productos">
@@ -392,6 +394,35 @@ main.busqueda .search-bar {
 
 .populares a:hover {
   border-color: #0f766e;
+}
+
+/* Indicador sutil de carga */
+.cargando {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #6b7280;
+}
+
+.cargando::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0f766e;
+  animation: pulso-carga 1s ease-in-out infinite;
+}
+
+@keyframes pulso-carga {
+  0%,
+  100% {
+    opacity: 0.25;
+    transform: scale(0.85);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 @media (max-width: 767px) {

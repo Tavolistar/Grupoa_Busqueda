@@ -32,6 +32,10 @@ export function useBusqueda() {
   const cargando = ref(false);
   const error = ref(null);
 
+  // Controlador de la petición en curso: permite cancelar la anterior cuando llega
+  // una consulta nueva, evitando que una respuesta lenta sobrescriba una más reciente.
+  let controlador = null;
+
   function construirParams() {
     const p = new URLSearchParams();
     if (filtros.q) p.set("q", filtros.q);
@@ -46,17 +50,28 @@ export function useBusqueda() {
   }
 
   async function buscar() {
+    // Cancela la petición anterior (si sigue en curso) antes de lanzar la nueva.
+    if (controlador) controlador.abort();
+    const ctrl = new AbortController();
+    controlador = ctrl;
+
     cargando.value = true;
     error.value = null;
     try {
-      const res = await fetch(`${API_BASE}/productos?${construirParams()}`);
+      const res = await fetch(`${API_BASE}/productos?${construirParams()}`, {
+        signal: ctrl.signal,
+      });
       const datos = await res.json();
       if (!res.ok) throw new Error(datos.error || "Error en la búsqueda");
+      if (ctrl.signal.aborted) return; // una consulta más reciente ya tomó el control
       resultado.value = { facetas: { categorias: [] }, ...datos };
     } catch (e) {
+      // Un abort es una cancelación intencional, no un error de la búsqueda.
+      if (e.name === "AbortError") return;
       error.value = e.message || "No se pudo conectar con el servidor.";
     } finally {
-      cargando.value = false;
+      // Solo la petición vigente apaga el estado de carga.
+      if (controlador === ctrl) cargando.value = false;
     }
   }
 
